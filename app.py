@@ -492,6 +492,23 @@ def reject_review(review_id):
     except Exception as e:
         return jsonify({"message": f"Failed to reject review: {e}"}), 500
 
+# --- HEALTH CHECK ENDPOINT ---
+
+@app.route('/health', methods=['GET'])
+@app.route('/', methods=['GET'])
+def health_check():
+    """Health check endpoint for deployment platforms"""
+    return jsonify({
+        "status": "healthy",
+        "service": "AI Review Response Automation Platform",
+        "version": "1.0.0",
+        "endpoints": {
+            "webhook": "/webhook/new-review",
+            "dashboard": "/dashboard.html",
+            "prompt_lab": "/prompt-lab.html"
+        }
+    }), 200
+
 # --- PROMPT ENGINEERING TESTING ENDPOINTS ---
 
 @app.route('/test-prompt', methods=['POST'])
@@ -765,4 +782,9 @@ if __name__ == '__main__':
     print("Starting AI Review Response Automation Platform...")
     print("Backend server running on http://localhost:5000")
     print("Webhook endpoint: http://localhost:5000/webhook/new-review")
-    app.run(debug=True, port=5000)
+    
+    # Production-ready configuration
+    port = int(os.environ.get("PORT", 5000))
+    debug_mode = os.environ.get("FLASK_ENV") != "production"
+    
+    app.run(host="0.0.0.0", port=port, debug=debug_mode)
