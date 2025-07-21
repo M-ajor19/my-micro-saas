@@ -72,42 +72,212 @@ def verify_webhook_signature(payload, signature, secret):
     
     return hmac.compare_digest(computed_hmac, signature)
 
+def analyze_review_sentiment_advanced(review_text, rating):
+    """
+    Advanced sentiment analysis beyond just rating numbers
+    """
+    review_lower = review_text.lower()
+    
+    # Positive indicators
+    positive_words = ['love', 'amazing', 'perfect', 'excellent', 'fantastic', 'beautiful', 'gorgeous', 
+                     'stunning', 'recommend', 'wonderful', 'brilliant', 'outstanding', 'impressed']
+    
+    # Negative indicators
+    negative_words = ['terrible', 'awful', 'hate', 'worst', 'horrible', 'disgusting', 'useless',
+                     'broken', 'damaged', 'disappointed', 'refund', 'return', 'waste']
+    
+    # Issue-specific indicators
+    shipping_issues = ['late', 'slow', 'delayed', 'shipping', 'delivery', 'arrived']
+    quality_issues = ['cheap', 'flimsy', 'poor quality', 'broke', 'defective', 'faulty']
+    size_issues = ['too small', 'too big', 'wrong size', 'doesn\'t fit', 'sizing']
+    
+    sentiment = {
+        'overall': 'neutral',
+        'specific_issues': [],
+        'positive_aspects': [],
+        'emotion_level': 'moderate'
+    }
+    
+    # Determine overall sentiment
+    if rating >= 4 or any(word in review_lower for word in positive_words):
+        sentiment['overall'] = 'positive'
+    elif rating <= 2 or any(word in review_lower for word in negative_words):
+        sentiment['overall'] = 'negative'
+    
+    # Identify specific issues
+    if any(word in review_lower for word in shipping_issues):
+        sentiment['specific_issues'].append('shipping')
+    if any(word in review_lower for word in quality_issues):
+        sentiment['specific_issues'].append('quality')
+    if any(word in review_lower for word in size_issues):
+        sentiment['specific_issues'].append('sizing')
+    
+    # Determine emotion level
+    if any(word in review_lower for word in ['love', 'hate', 'amazing', 'terrible']):
+        sentiment['emotion_level'] = 'high'
+    
+    return sentiment
+
+def get_niche_specific_context(niche_context):
+    """
+    Returns niche-specific response strategies and vocabulary
+    """
+    niche_contexts = {
+        'handmade jewelry': {
+            'craftsmanship_terms': ['handcrafted', 'artisan-made', 'carefully crafted', 'unique piece'],
+            'quality_assurance': 'Each piece is individually inspected for quality',
+            'personalization': 'We can customize pieces to your preferences',
+            'common_concerns': ['tarnishing', 'sizing', 'delicate handling'],
+            'brand_values': ['authenticity', 'craftsmanship', 'uniqueness']
+        },
+        'clothing': {
+            'craftsmanship_terms': ['quality fabrics', 'attention to detail', 'carefully designed'],
+            'quality_assurance': 'All garments undergo quality checks',
+            'personalization': 'We offer size exchanges and alterations',
+            'common_concerns': ['sizing', 'fabric quality', 'color accuracy'],
+            'brand_values': ['style', 'comfort', 'quality']
+        },
+        'electronics': {
+            'craftsmanship_terms': ['precision engineering', 'quality components', 'rigorous testing'],
+            'quality_assurance': 'All products are tested before shipping',
+            'personalization': 'We provide technical support and warranty',
+            'common_concerns': ['functionality', 'durability', 'compatibility'],
+            'brand_values': ['innovation', 'reliability', 'performance']
+        },
+        'home decor': {
+            'craftsmanship_terms': ['thoughtfully designed', 'quality materials', 'attention to detail'],
+            'quality_assurance': 'Each item is carefully packaged to prevent damage',
+            'personalization': 'We can help you find the perfect piece for your space',
+            'common_concerns': ['shipping damage', 'color matching', 'size'],
+            'brand_values': ['style', 'quality', 'home beautification']
+        },
+        'beauty': {
+            'craftsmanship_terms': ['carefully formulated', 'premium ingredients', 'tested formulas'],
+            'quality_assurance': 'All products are dermatologist tested',
+            'personalization': 'We can recommend products for your skin type',
+            'common_concerns': ['skin reactions', 'effectiveness', 'ingredient quality'],
+            'brand_values': ['beauty', 'self-care', 'confidence']
+        }
+    }
+    
+    return niche_contexts.get(niche_context, niche_contexts['handmade jewelry'])
+
 def generate_review_reply_prompt(review_text, review_rating, brand_tone_config, niche_context):
     """
-    Enhanced prompt engineering function for generating review replies
+    ADVANCED PROMPT ENGINEERING - The Secret Sauce
+    This function uses sophisticated prompt engineering techniques to generate
+    contextually aware, emotionally intelligent, and brand-consistent responses.
     """
+    
+    # Advanced sentiment analysis
+    sentiment = analyze_review_sentiment_advanced(review_text, review_rating)
+    niche_info = get_niche_specific_context(niche_context)
+    
+    # Extract brand configuration
     tone = brand_tone_config.get("tone", "friendly and professional")
-    key_phrases = ", ".join(brand_tone_config.get("key_phrases", []))
+    key_phrases = brand_tone_config.get("key_phrases", [])
     
-    # A more sophisticated prompt based on review sentiment
-    if review_rating >= 4:
-        sentiment_instruction = "The review is positive. Express sincere gratitude and reinforce the brand's unique qualities."
-    elif review_rating == 3:
-        sentiment_instruction = "The review is neutral. Acknowledge their feedback and express hope for a better future experience."
-    else:
-        # Negative review
-        sentiment_instruction = "The review is negative. Apologize sincerely, express empathy, offer to resolve the issue, and maintain a calm, professional tone. Avoid being defensive."
+    # Advanced tone mapping
+    tone_instructions = {
+        'friendly': 'Warm, approachable, and personable. Use conversational language.',
+        'professional': 'Polished, business-appropriate, and competent.',
+        'casual': 'Relaxed, informal, and conversational. You may use contractions.',
+        'luxury': 'Sophisticated, elegant, and premium. Emphasize exclusivity.',
+        'witty': 'Clever and humorous while remaining respectful.',
+        'artisanal': 'Emphasize craftsmanship, tradition, and personal touch.',
+        'technical': 'Precise, informative, and solution-focused.'
+    }
     
-    prompt = f"""
-    You are an AI assistant specialized in generating e-commerce review replies for a {niche_context} business.
-    Your goal is to craft a reply that is:
-    - {tone}
-    - Concise (max 3-4 sentences)
-    - Directly addresses the review content
-    - Incorporates key brand phrases when appropriate: {key_phrases}
-    - Follows specific instructions based on review sentiment.
+    # Build dynamic response strategy based on sentiment analysis
+    if sentiment['overall'] == 'positive':
+        if sentiment['emotion_level'] == 'high':
+            response_strategy = """
+            STRATEGY: High-energy positive response
+            - Match their enthusiasm with genuine excitement
+            - Highlight what makes your product special
+            - Invite them to share their experience (photos, social media)
+            - Reinforce brand values and community
+            """
+        else:
+            response_strategy = """
+            STRATEGY: Warm appreciation response
+            - Express sincere gratitude
+            - Reinforce their good choice
+            - Gently encourage future purchases or recommendations
+            """
+    
+    elif sentiment['overall'] == 'negative':
+        if sentiment['specific_issues']:
+            issue_solutions = {
+                'shipping': 'Acknowledge shipping concern, explain improvements, offer expedited future shipping',
+                'quality': 'Apologize for quality issue, explain quality standards, offer replacement/refund',
+                'sizing': 'Acknowledge sizing concern, offer exchange, provide better sizing guidance'
+            }
+            solutions = [issue_solutions.get(issue, '') for issue in sentiment['specific_issues']]
+            response_strategy = f"""
+            STRATEGY: Problem-solving response
+            - Apologize sincerely without being defensive
+            - Address specific issues: {', '.join(sentiment['specific_issues'])}
+            - Provide concrete solutions: {'. '.join(solutions)}
+            - Demonstrate commitment to customer satisfaction
+            """
+        else:
+            response_strategy = """
+            STRATEGY: Empathetic recovery response
+            - Acknowledge their disappointment with genuine empathy
+            - Take responsibility without making excuses
+            - Offer specific remediation (refund, replacement, store credit)
+            - Invite private conversation to resolve
+            """
+    
+    else:  # neutral
+        response_strategy = """
+        STRATEGY: Engagement and improvement response
+        - Thank them for honest feedback
+        - Address any specific points they raised
+        - Show how you're using feedback to improve
+        - Invite future engagement
+        """
+    
+    # Construct the advanced prompt
+    prompt = f"""You are an expert customer service representative for a {niche_context} business. You have years of experience in customer relations and understand the nuances of online review responses.
 
-    ### Review Details:
-    Rating: {review_rating} out of 5 stars
-    Review Text: "{review_text}"
+BUSINESS CONTEXT:
+- Industry: {niche_context}
+- Brand Values: {', '.join(niche_info['brand_values'])}
+- Quality Promise: {niche_info['quality_assurance']}
 
-    ### Instructions for Reply:
-    {sentiment_instruction}
-    Do not use emojis unless the brand tone is explicitly 'witty' or 'casual'.
-    Do not sound robotic or generic. Make it sound like a real person wrote it.
+BRAND VOICE:
+- Primary Tone: {tone}
+- Tone Guidelines: {tone_instructions.get(tone, 'Professional and helpful')}
+- Key Brand Phrases to weave in naturally: {', '.join(key_phrases) if key_phrases else 'None specified'}
 
-    ### Generated Reply:
-    """
+CUSTOMER REVIEW ANALYSIS:
+- Rating: {review_rating}/5 stars
+- Review Text: "{review_text}"
+- Detected Sentiment: {sentiment['overall']} (emotion level: {sentiment['emotion_level']})
+- Specific Issues Identified: {', '.join(sentiment['specific_issues']) if sentiment['specific_issues'] else 'None'}
+
+{response_strategy}
+
+RESPONSE REQUIREMENTS:
+1. Length: 2-4 sentences (conversational, not essay-like)
+2. Authenticity: Sound like a real person, not a bot
+3. Specificity: Reference specific details from their review
+4. Brand Consistency: Reflect the brand voice and values
+5. Action-Oriented: Include next steps when appropriate
+6. Emotional Intelligence: Match the emotional tone appropriately
+
+AVOID:
+- Generic templates that could apply to any business
+- Over-apologizing or being defensive
+- Mentioning competitors
+- Making promises you can't keep
+- Using corporate jargon or buzzwords
+- Emojis (unless brand tone is explicitly casual/witty)
+
+Write a response that feels personal, genuine, and professionally crafted:"""
+
     return prompt
 
 # --- Webhook Endpoint for Incoming Reviews (Simulated Shopify/Amazon/eBay Webhook) ---
@@ -321,6 +491,273 @@ def reject_review(review_id):
         return jsonify({"message": "Review rejected successfully", "review_id": review_id}), 200
     except Exception as e:
         return jsonify({"message": f"Failed to reject review: {e}"}), 500
+
+# --- PROMPT ENGINEERING TESTING ENDPOINTS ---
+
+@app.route('/test-prompt', methods=['POST'])
+def test_prompt_engineering():
+    """
+    Advanced prompt testing endpoint for iterating on AI responses
+    """
+    data = request.json
+    
+    # Test scenarios for different review types
+    test_scenarios = data.get('scenarios', [
+        {
+            "name": "Glowing 5-star review",
+            "review_text": "Absolutely love my new earrings! The craftsmanship is incredible and they arrived perfectly packaged. Will definitely order again!",
+            "rating": 5,
+            "customer_name": "Sarah M."
+        },
+        {
+            "name": "Positive with minor issue",
+            "review_text": "Beautiful necklace, exactly as pictured. Shipping took a bit longer than expected but worth the wait.",
+            "rating": 4,
+            "customer_name": "Jennifer L."
+        },
+        {
+            "name": "Neutral feedback",
+            "review_text": "The ring is nice but not quite what I expected from the photos. Quality is decent for the price.",
+            "rating": 3,
+            "customer_name": "Mike R."
+        },
+        {
+            "name": "Negative with specific issues",
+            "review_text": "Very disappointed. The bracelet broke after just two days of wearing. Poor quality materials.",
+            "rating": 2,
+            "customer_name": "Lisa K."
+        },
+        {
+            "name": "Angry 1-star review",
+            "review_text": "Terrible experience! Item never arrived and customer service is non-existent. Do not buy from this seller!",
+            "rating": 1,
+            "customer_name": "David P."
+        }
+    ])
+    
+    # Test different brand configurations
+    brand_configs = data.get('brand_configs', [
+        {
+            "name": "Artisanal Friendly",
+            "tone": "friendly, appreciative, artisanal",
+            "key_phrases": ["handcrafted", "unique design", "artisan-made"],
+            "niche": "handmade jewelry"
+        },
+        {
+            "name": "Professional Luxury",
+            "tone": "professional, luxury, sophisticated",
+            "key_phrases": ["premium quality", "exceptional craftsmanship", "exclusive"],
+            "niche": "handmade jewelry"
+        },
+        {
+            "name": "Casual & Witty",
+            "tone": "casual, witty, approachable",
+            "key_phrases": ["handmade with love", "one-of-a-kind", "made just for you"],
+            "niche": "handmade jewelry"
+        }
+    ])
+    
+    results = []
+    
+    for brand_config in brand_configs:
+        for scenario in test_scenarios:
+            try:
+                # Generate prompt using our advanced function
+                prompt = generate_review_reply_prompt(
+                    scenario['review_text'],
+                    scenario['rating'],
+                    {
+                        "tone": brand_config['tone'],
+                        "key_phrases": brand_config['key_phrases']
+                    },
+                    brand_config['niche']
+                )
+                
+                # Generate AI response
+                if openai.api_key:
+                    chat_completion = openai.chat.completions.create(
+                        model="gpt-3.5-turbo",
+                        messages=[
+                            {"role": "system", "content": "You are an expert customer service representative."},
+                            {"role": "user", "content": prompt}
+                        ],
+                        temperature=0.7,
+                        max_tokens=200
+                    )
+                    ai_response = chat_completion.choices[0].message.content.strip()
+                else:
+                    ai_response = "[OpenAI API key not configured - simulation mode]"
+                
+                results.append({
+                    "scenario": scenario['name'],
+                    "brand_config": brand_config['name'],
+                    "original_review": scenario['review_text'],
+                    "rating": scenario['rating'],
+                    "ai_response": ai_response,
+                    "prompt_used": prompt[:200] + "..." if len(prompt) > 200 else prompt
+                })
+                
+            except Exception as e:
+                results.append({
+                    "scenario": scenario['name'],
+                    "brand_config": brand_config['name'],
+                    "error": str(e)
+                })
+    
+    return jsonify({
+        "message": "Prompt engineering test completed",
+        "total_tests": len(results),
+        "results": results
+    }), 200
+
+@app.route('/analyze-prompt', methods=['POST'])
+def analyze_prompt_quality():
+    """
+    Analyze the quality of generated responses based on specific criteria
+    """
+    data = request.json
+    responses = data.get('responses', [])
+    
+    analysis_results = []
+    
+    for response_data in responses:
+        ai_response = response_data.get('ai_response', '')
+        original_review = response_data.get('original_review', '')
+        rating = response_data.get('rating', 0)
+        
+        # Quality metrics
+        quality_score = {
+            "authenticity": 0,  # Sounds human, not robotic
+            "specificity": 0,   # References specific details from review
+            "tone_match": 0,    # Matches intended brand tone
+            "emotional_intelligence": 0,  # Appropriate emotional response
+            "actionability": 0, # Includes clear next steps when needed
+            "total_score": 0
+        }
+        
+        # Authenticity check (avoid generic phrases)
+        generic_phrases = ['thank you for your review', 'we appreciate your feedback', 'sorry for any inconvenience']
+        if not any(phrase in ai_response.lower() for phrase in generic_phrases):
+            quality_score["authenticity"] += 20
+        
+        # Specificity check (mentions specific aspects from review)
+        review_words = set(original_review.lower().split())
+        response_words = set(ai_response.lower().split())
+        overlap = len(review_words.intersection(response_words))
+        if overlap > 2:
+            quality_score["specificity"] = min(20, overlap * 3)
+        
+        # Emotional intelligence (appropriate response to sentiment)
+        if rating >= 4 and any(word in ai_response.lower() for word in ['thrilled', 'delighted', 'wonderful']):
+            quality_score["emotional_intelligence"] += 20
+        elif rating <= 2 and any(word in ai_response.lower() for word in ['sorry', 'apologize', 'understand']):
+            quality_score["emotional_intelligence"] += 20
+        
+        # Actionability (includes next steps when appropriate)
+        action_phrases = ['contact us', 'reach out', 'let us know', 'we\'ll', 'happy to help']
+        if rating <= 3 and any(phrase in ai_response.lower() for phrase in action_phrases):
+            quality_score["actionability"] += 20
+        
+        # Calculate total score
+        quality_score["total_score"] = sum([v for k, v in quality_score.items() if k != "total_score"])
+        
+        analysis_results.append({
+            "response": ai_response,
+            "quality_metrics": quality_score,
+            "recommendations": generate_improvement_recommendations(quality_score, ai_response, rating)
+        })
+    
+    return jsonify({
+        "message": "Response quality analysis completed",
+        "results": analysis_results
+    }), 200
+
+def generate_improvement_recommendations(quality_score, ai_response, rating):
+    """
+    Generate specific recommendations for improving AI responses
+    """
+    recommendations = []
+    
+    if quality_score["authenticity"] < 15:
+        recommendations.append("Make response more conversational and less template-like")
+    
+    if quality_score["specificity"] < 10:
+        recommendations.append("Reference specific details from the customer's review")
+    
+    if quality_score["emotional_intelligence"] < 15:
+        if rating >= 4:
+            recommendations.append("Show more enthusiasm and excitement for positive reviews")
+        elif rating <= 2:
+            recommendations.append("Express more empathy and understanding for negative reviews")
+    
+    if quality_score["actionability"] < 10 and rating <= 3:
+        recommendations.append("Include clear next steps or call-to-action for resolution")
+    
+    if len(ai_response.split()) > 100:
+        recommendations.append("Keep response more concise (aim for 2-4 sentences)")
+    
+    return recommendations
+
+@app.route('/generate-variations', methods=['POST'])
+def generate_response_variations():
+    """
+    Generate multiple variations of responses for A/B testing
+    """
+    data = request.json
+    review_text = data.get('review_text')
+    rating = data.get('rating')
+    brand_config = data.get('brand_config', {})
+    niche = data.get('niche', 'handmade jewelry')
+    
+    if not review_text or rating is None:
+        return jsonify({"message": "Missing review_text or rating"}), 400
+    
+    # Generate variations with different approaches
+    variations = []
+    
+    variation_configs = [
+        {"temperature": 0.3, "approach": "Conservative"},
+        {"temperature": 0.7, "approach": "Balanced"},
+        {"temperature": 0.9, "approach": "Creative"},
+    ]
+    
+    for config in variation_configs:
+        try:
+            prompt = generate_review_reply_prompt(
+                review_text, rating, brand_config, niche
+            )
+            
+            if openai.api_key:
+                chat_completion = openai.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    messages=[
+                        {"role": "system", "content": "You are an expert customer service representative."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    temperature=config["temperature"],
+                    max_tokens=150
+                )
+                ai_response = chat_completion.choices[0].message.content.strip()
+            else:
+                ai_response = f"[Simulation - {config['approach']} approach]"
+            
+            variations.append({
+                "approach": config["approach"],
+                "temperature": config["temperature"],
+                "response": ai_response
+            })
+        except Exception as e:
+            variations.append({
+                "approach": config["approach"],
+                "error": str(e)
+            })
+    
+    return jsonify({
+        "message": "Response variations generated",
+        "original_review": review_text,
+        "rating": rating,
+        "variations": variations
+    }), 200
 
 if __name__ == '__main__':
     # For local development, run with `python app.py`
