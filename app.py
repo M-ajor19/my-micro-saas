@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import os
 import openai
@@ -492,10 +492,24 @@ def reject_review(review_id):
     except Exception as e:
         return jsonify({"message": f"Failed to reject review: {e}"}), 500
 
-# --- HEALTH CHECK ENDPOINT ---
+# --- HEALTH CHECK AND STATIC FILE ENDPOINTS ---
+
+@app.route('/')
+def index():
+    """Serve the main landing page"""
+    return send_from_directory('.', 'index.html')
+
+@app.route('/dashboard.html')
+def dashboard():
+    """Serve the dashboard page"""
+    return send_from_directory('.', 'dashboard.html')
+
+@app.route('/prompt-lab.html')
+def prompt_lab():
+    """Serve the prompt lab page"""
+    return send_from_directory('.', 'prompt-lab.html')
 
 @app.route('/health', methods=['GET'])
-@app.route('/', methods=['GET'])
 def health_check():
     """Health check endpoint for deployment platforms"""
     return jsonify({
