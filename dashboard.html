@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Review Response Automation - Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-robot text-2xl text-blue-600"></i>
+                        <span class="ml-2 text-xl font-semibold text-gray-900">ReviewBot AI</span>
+                    </div>
+                    <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
+                        <a href="#dashboard" class="nav-link border-blue-500 text-gray-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                            Dashboard
+                        </a>
+                        <a href="#reviews" class="nav-link border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                            Reviews
+                        </a>
+                        <a href="#settings" class="nav-link border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                            Brand Settings
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <!-- Dashboard Section -->
+        <div id="dashboard-section" class="section">
+            <!-- Analytics Cards -->
+            <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+                <div class="bg-white overflow-hidden shadow rounded-lg">
+                    <div class="p-5">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-star text-yellow-400 text-2xl"></i>
+                            </div>
+                            <div class="ml-5 w-0 flex-1">
+                                <dl>
+                                    <dt class="text-sm font-medium text-gray-500 truncate">Total Reviews</dt>
+                                    <dd id="total-reviews" class="text-lg font-medium text-gray-900">-</dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white overflow-hidden shadow rounded-lg">
+                    <div class="p-5">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-clock text-orange-400 text-2xl"></i>
+                            </div>
+                            <div class="ml-5 w-0 flex-1">
+                                <dl>
+                                    <dt class="text-sm font-medium text-gray-500 truncate">Pending Approval</dt>
+                                    <dd id="pending-reviews" class="text-lg font-medium text-gray-900">-</dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white overflow-hidden shadow rounded-lg">
+                    <div class="p-5">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-check-circle text-green-400 text-2xl"></i>
+                            </div>
+                            <div class="ml-5 w-0 flex-1">
+                                <dl>
+                                    <dt class="text-sm font-medium text-gray-500 truncate">Published</dt>
+                                    <dd id="published-reviews" class="text-lg font-medium text-gray-900">-</dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white overflow-hidden shadow rounded-lg">
+                    <div class="p-5">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-chart-line text-blue-400 text-2xl"></i>
+                            </div>
+                            <div class="ml-5 w-0 flex-1">
+                                <dl>
+                                    <dt class="text-sm font-medium text-gray-500 truncate">Avg Rating</dt>
+                                    <dd id="avg-rating" class="text-lg font-medium text-gray-900">-</dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Rating Distribution</h3>
+                    <canvas id="ratingChart" width="400" height="200"></canvas>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Response Rate</h3>
+                    <div class="flex items-center justify-center h-48">
+                        <div class="text-center">
+                            <div id="response-rate" class="text-4xl font-bold text-blue-600">-</div>
+                            <div class="text-sm text-gray-500">Response Rate</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reviews Section -->
+        <div id="reviews-section" class="section hidden">
+            <div class="bg-white shadow overflow-hidden sm:rounded-md">
+                <div class="px-4 py-5 sm:px-6">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900">Pending Reviews</h3>
+                    <p class="mt-1 max-w-2xl text-sm text-gray-500">Reviews waiting for your approval</p>
+                </div>
+                <ul id="reviews-list" class="divide-y divide-gray-200">
+                    <!-- Reviews will be loaded here -->
+                </ul>
+            </div>
+        </div>
+
+        <!-- Settings Section -->
+        <div id="settings-section" class="section hidden">
+            <div class="bg-white shadow sm:rounded-lg">
+                <div class="px-4 py-5 sm:p-6">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900">Brand Voice Settings</h3>
+                    <div class="mt-5">
+                        <form id="brand-settings-form">
+                            <div class="mb-4">
+                                <label for="brand-tone" class="block text-sm font-medium text-gray-700">Brand Tone</label>
+                                <input type="text" id="brand-tone" name="tone" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="e.g., friendly, professional, casual">
+                            </div>
+                            <div class="mb-4">
+                                <label for="key-phrases" class="block text-sm font-medium text-gray-700">Key Phrases</label>
+                                <textarea id="key-phrases" name="key_phrases" rows="3" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="Enter key phrases separated by commas"></textarea>
+                            </div>
+                            <div class="mb-4">
+                                <label for="niche-context" class="block text-sm font-medium text-gray-700">Business Niche</label>
+                                <select id="niche-context" name="niche" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                    <option value="handmade jewelry">Handmade Jewelry</option>
+                                    <option value="clothing">Clothing & Fashion</option>
+                                    <option value="electronics">Electronics</option>
+                                    <option value="home decor">Home Decor</option>
+                                    <option value="beauty">Beauty & Cosmetics</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                Update Settings
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Review Modal -->
+    <div id="review-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-medium text-gray-900">Review Response</h3>
+                    <button id="close-modal" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <div class="mb-4">
+                    <h4 class="font-medium text-gray-700">Original Review</h4>
+                    <div id="modal-review" class="mt-2 p-3 bg-gray-50 rounded-md"></div>
+                </div>
+                
+                <div class="mb-4">
+                    <h4 class="font-medium text-gray-700">AI Generated Response</h4>
+                    <textarea id="modal-response" rows="4" class="mt-2 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></textarea>
+                </div>
+                
+                <div class="flex justify-end space-x-3">
+                    <button id="reject-btn" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">
+                        Reject
+                    </button>
+                    <button id="approve-btn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                        Approve & Publish
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="dashboard.js"></script>
+</body>
+</html>
