@@ -289,6 +289,7 @@ class ReviewDashboard {
     }
 
     setupForms() {
+        // Brand settings form
         const brandForm = document.getElementById('brand-settings-form');
         brandForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -315,6 +316,69 @@ class ReviewDashboard {
                 this.showNotification('Failed to update settings', 'error');
             }
         });
+
+        // Test AI form
+        const testBtn = document.getElementById('test-generate-btn');
+        if (testBtn) {
+            testBtn.addEventListener('click', async () => {
+                await this.testAIResponse();
+            });
+        }
+    }
+
+    async testAIResponse() {
+        const reviewText = document.getElementById('test-review-text').value.trim();
+        const rating = document.getElementById('test-rating').value;
+        const niche = document.getElementById('test-niche').value;
+        
+        if (!reviewText) {
+            this.showNotification('Please enter a review text', 'error');
+            return;
+        }
+
+        const testResult = document.getElementById('test-result');
+        const testResponse = document.getElementById('test-response');
+        const testLoading = document.getElementById('test-loading');
+        
+        // Show loading state
+        testResult.classList.remove('hidden');
+        testLoading.classList.remove('hidden');
+        testResponse.innerHTML = '';
+        
+        try {
+            const response = await fetch(`${this.apiUrl}/webhook/new-review`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    id: `test_${Date.now()}`,
+                    review_text: reviewText,
+                    review_rating: parseInt(rating),
+                    reviewer_name: 'Test Customer',
+                    product_id: 'test_product',
+                    niche_context: niche
+                })
+            });
+            
+            const data = await response.json();
+            
+            // Hide loading
+            testLoading.classList.add('hidden');
+            
+            if (response.ok && data.ai_response) {
+                testResponse.innerHTML = `<p class="text-gray-900">${data.ai_response}</p>`;
+                this.showNotification('AI response generated successfully!', 'success');
+            } else {
+                testResponse.innerHTML = `<p class="text-red-600">Error: ${data.message || 'Failed to generate response'}</p>`;
+                this.showNotification('Failed to generate AI response', 'error');
+            }
+        } catch (error) {
+            testLoading.classList.add('hidden');
+            testResponse.innerHTML = `<p class="text-red-600">Network error: ${error.message}</p>`;
+            this.showNotification('Network error occurred', 'error');
+            console.error('Test AI error:', error);
+        }
     }
 
     showNotification(message, type = 'info') {
