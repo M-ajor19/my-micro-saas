@@ -534,8 +534,8 @@ def reject_review(review_id):
 
 @app.route('/')
 def index():
-    """Serve the main landing page"""
-    return send_from_directory('.', 'index.html')
+    """Serve the NEXUS CONSCIOUSNESS LAB as the main interface"""
+    return send_from_directory('.', 'sentient-ai-lab.html')
 
 @app.route('/dashboard.html')
 def dashboard():
@@ -588,9 +588,11 @@ def health_check():
     """Health check endpoint for deployment platforms"""
     return jsonify({
         "status": "healthy",
-        "service": "AI Review Response Automation Platform",
-        "version": "1.0.0",
+        "service": "NEXUS CONSCIOUSNESS LAB - AI Review Response Platform",
+        "version": "2.0.0",
         "endpoints": {
+            "main": "/",
+            "nexus_lab": "/sentient-ai-lab.html",
             "webhook": "/webhook/new-review",
             "dashboard": "/dashboard.html",
             "prompt_lab": "/prompt-lab.html"
