@@ -1,0 +1,1410 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ResponseAI - Intelligent Review Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/feather-icons/4.29.0/feather.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/feather-icons"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4C7CFF',
+                        secondary: '#6B7280',
+                        success: '#38A169',
+                        warning: '#ED8936',
+                        danger: '#E53E3E',
+                        surface: '#FFFFFF',
+                        background: '#F9FAFB',
+                        'text-primary': '#1F2937',
+                        'text-secondary': '#6B7280',
+                        'text-tertiary': '#9CA3AF',
+                        'border-light': '#E5E7EB',
+                        'border-medium': '#D1D5DB',
+                    },
+                    fontFamily: {
+                        'sans': ['Inter', 'system-ui', 'sans-serif'],
+                        'display': ['Poppins', 'Inter', 'system-ui', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'elegant': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                        'elegant-lg': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                        'elegant-xl': '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-out',
+                        'slide-up': 'slideUp 0.4s ease-out',
+                        'pulse-gentle': 'pulseGentle 2s ease-in-out infinite',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes pulseGentle {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+        
+        .gradient-subtle {
+            background: linear-gradient(135deg, #F9FAFB 0%, #F3F4F6 100%);
+        }
+        
+        .gradient-card {
+            background: linear-gradient(135deg, #FFFFFF 0%, #F9FAFB 100%);
+        }
+        
+        .hover-lift {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .hover-lift:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 20px -8px rgba(0, 0, 0, 0.15);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #4C7CFF 0%, #3B82F6 100%);
+            transition: all 0.2s ease;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 8px 15px -3px rgba(76, 124, 255, 0.3);
+        }
+        
+        .progress-ring {
+            transition: stroke-dasharray 0.5s ease-in-out;
+        }
+        
+        .sidebar-collapsed {
+            width: 80px;
+        }
+        
+        .sidebar-expanded {
+            width: 280px;
+        }
+        
+        .sidebar-auto {
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        
+        .sidebar-auto:hover {
+            width: 280px;
+        }
+        
+        .sidebar-auto:not(:hover) {
+            width: 80px;
+        }
+        
+        .sidebar-text {
+            transition: all 0.3s ease;
+        }
+        
+        .sidebar-auto:not(:hover) .sidebar-text {
+            opacity: 0;
+            visibility: hidden;
+            transform: translateX(-10px);
+        }
+        
+        .sidebar-auto:hover .sidebar-text {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(0);
+        }
+        
+        .nav-item {
+            transition: all 0.2s ease;
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .nav-item:hover {
+            background: rgba(76, 124, 255, 0.08);
+            transform: translateX(4px);
+        }
+        
+        .nav-item.active {
+            background: rgba(76, 124, 255, 0.12);
+            border-left: 3px solid #4C7CFF;
+        }
+        
+        .nav-item.active::before {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 3px;
+            height: 20px;
+            background: #4C7CFF;
+            border-radius: 2px 0 0 2px;
+        }
+        
+        .auto-collapse-indicator {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 20px;
+            background: rgba(76, 124, 255, 0.3);
+            border-radius: 2px;
+            transition: all 0.3s ease;
+        }
+        
+        .sidebar-auto:hover .auto-collapse-indicator {
+            background: rgba(76, 124, 255, 0.6);
+            height: 30px;
+        }
+        
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            letter-spacing: 0.025em;
+        }
+        
+        .status-pending {
+            background: rgba(237, 137, 54, 0.1);
+            color: #C05621;
+        }
+        
+        .status-published {
+            background: rgba(56, 161, 105, 0.1);
+            color: #276749;
+        }
+        
+        .status-rejected {
+            background: rgba(229, 62, 62, 0.1);
+            color: #C53030;
+        }
+        
+        .metric-card {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--accent-color);
+            opacity: 0.6;
+        }
+        
+        .table-row {
+            transition: all 0.2s ease;
+        }
+        
+        .table-row:hover {
+            background: rgba(76, 124, 255, 0.02);
+            transform: scale(1.005);
+        }
+    </style>
+</head>
+
+<body class="bg-background font-sans">
+    <!-- Sidebar -->
+    <aside id="sidebar" class="fixed left-0 top-0 h-full bg-surface border-r border-border-light sidebar-auto z-50">
+        <div class="p-6 border-b border-border-light">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-gradient-to-br from-primary to-blue-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <i data-feather="zap" class="w-6 h-6 text-white"></i>
+                </div>
+                <div class="sidebar-text">
+                    <h1 class="font-display font-semibold text-lg text-text-primary">ResponseAI</h1>
+                    <p class="text-xs text-text-tertiary">Intelligent Reviews</p>
+                </div>
+            </div>
+        </div>
+        
+        <nav class="p-4 space-y-2">
+            <a href="#dashboard" onclick="navigateToSection('dashboard')" class="nav-item active flex items-center space-x-3 p-3 text-text-primary">
+                <i data-feather="home" class="w-5 h-5 flex-shrink-0"></i>
+                <span class="sidebar-text">Dashboard</span>
+            </a>
+            <a href="#reviews" onclick="navigateToSection('reviews')" class="nav-item flex items-center space-x-3 p-3 text-text-secondary hover:text-text-primary">
+                <i data-feather="inbox" class="w-5 h-5 flex-shrink-0"></i>
+                <span class="sidebar-text">Reviews</span>
+                <span class="sidebar-text ml-auto bg-warning text-white text-xs px-2 py-1 rounded-full" id="pending-count">0</span>
+            </a>
+            <a href="#brand-voice" onclick="navigateToSection('brand-voice')" class="nav-item flex items-center space-x-3 p-3 text-text-secondary hover:text-text-primary">
+                <i data-feather="mic" class="w-5 h-5 flex-shrink-0"></i>
+                <span class="sidebar-text">Brand Voice</span>
+            </a>
+            <a href="#analytics" onclick="navigateToSection('analytics')" class="nav-item flex items-center space-x-3 p-3 text-text-secondary hover:text-text-primary">
+                <i data-feather="bar-chart-2" class="w-5 h-5 flex-shrink-0"></i>
+                <span class="sidebar-text">Analytics</span>
+            </a>
+            <a href="#integrations" onclick="navigateToSection('integrations')" class="nav-item flex items-center space-x-3 p-3 text-text-secondary hover:text-text-primary">
+                <i data-feather="link" class="w-5 h-5 flex-shrink-0"></i>
+                <span class="sidebar-text">Integrations</span>
+            </a>
+        </nav>
+        
+        <div class="auto-collapse-indicator"></div>
+        
+        <div class="absolute bottom-4 left-4 right-4">
+            <div class="border-t border-border-light pt-4">
+                <button id="pin-btn" onclick="toggleAutoCollapse()" class="nav-item flex items-center space-x-3 p-3 text-text-secondary hover:text-text-primary w-full" title="Toggle Auto-collapse">
+                    <i data-feather="sidebar" class="w-5 h-5 flex-shrink-0" id="pin-icon"></i>
+                    <span class="sidebar-text">Auto-collapse</span>
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main id="main-content" class="ml-20 transition-all duration-300 ease-in-out">
+        <!-- Top Header -->
+        <header class="bg-surface border-b border-border-light px-8 py-4 sticky top-0 z-40">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="font-display font-semibold text-2xl text-text-primary">Dashboard</h1>
+                    <p class="text-text-secondary text-sm mt-1">Monitor and manage your review responses</p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button class="relative p-2 text-text-secondary hover:text-text-primary hover:bg-background rounded-lg transition-colors">
+                        <i data-feather="bell" class="w-5 h-5"></i>
+                        <span class="absolute -top-1 -right-1 w-3 h-3 bg-danger rounded-full"></span>
+                    </button>
+                    <button onclick="showLoginModal()" class="text-text-secondary hover:text-text-primary text-sm font-medium">
+                        Sign In
+                    </button>
+                    <div class="w-8 h-8 bg-gradient-to-br from-primary to-blue-600 rounded-full flex items-center justify-center cursor-pointer" onclick="showUserMenu()">
+                        <i data-feather="user" class="w-4 h-4 text-white"></i>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Dashboard Content -->
+        <div id="dashboard-section" class="section-content p-8 space-y-8">
+            <!-- Metrics Overview -->
+            <section class="animate-fade-in">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <!-- Total Reviews -->
+                    <div class="metric-card bg-surface rounded-2xl p-6 shadow-elegant hover-lift" style="--accent-color: #4C7CFF;">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-text-secondary text-sm font-medium">Total Reviews</p>
+                                <p class="text-3xl font-display font-bold text-text-primary mt-2" id="total-reviews">0</p>
+                                <p class="text-primary text-sm mt-1 flex items-center">
+                                    <i data-feather="trending-up" class="w-4 h-4 mr-1"></i>
+                                    +12% from last month
+                                </p>
+                            </div>
+                            <div class="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
+                                <i data-feather="message-circle" class="w-6 h-6 text-primary"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pending Reviews -->
+                    <div class="metric-card bg-surface rounded-2xl p-6 shadow-elegant hover-lift" style="--accent-color: #ED8936;">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-text-secondary text-sm font-medium">Pending</p>
+                                <p class="text-3xl font-display font-bold text-text-primary mt-2" id="pending-reviews">0</p>
+                                <p class="text-warning text-sm mt-1">Awaiting approval</p>
+                            </div>
+                            <div class="w-12 h-12 bg-warning/10 rounded-xl flex items-center justify-center">
+                                <i data-feather="clock" class="w-6 h-6 text-warning"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Published Reviews -->
+                    <div class="metric-card bg-surface rounded-2xl p-6 shadow-elegant hover-lift" style="--accent-color: #38A169;">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-text-secondary text-sm font-medium">Published</p>
+                                <p class="text-3xl font-display font-bold text-text-primary mt-2" id="published-reviews">0</p>
+                                <p class="text-success text-sm mt-1">Successfully automated</p>
+                            </div>
+                            <div class="w-12 h-12 bg-success/10 rounded-xl flex items-center justify-center">
+                                <i data-feather="check-circle" class="w-6 h-6 text-success"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Response Rate -->
+                    <div class="metric-card bg-surface rounded-2xl p-6 shadow-elegant hover-lift" style="--accent-color: #7C3AED;">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-text-secondary text-sm font-medium">Response Rate</p>
+                                <p class="text-3xl font-display font-bold text-text-primary mt-2" id="response-rate">0%</p>
+                                <div class="mt-2">
+                                    <div class="w-full bg-gray-200 rounded-full h-2">
+                                        <div class="bg-gradient-to-r from-primary to-purple-600 h-2 rounded-full transition-all duration-500" style="width: 0%" id="response-rate-bar"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="relative w-16 h-16">
+                                <svg class="w-16 h-16 transform -rotate-90" viewBox="0 0 64 64">
+                                    <circle cx="32" cy="32" r="28" stroke="#E5E7EB" stroke-width="4" fill="none"/>
+                                    <circle cx="32" cy="32" r="28" stroke="#7C3AED" stroke-width="4" fill="none" 
+                                            stroke-dasharray="175.93" stroke-dashoffset="175.93" class="progress-ring" id="response-rate-circle"/>
+                                </svg>
+                                <div class="absolute inset-0 flex items-center justify-center">
+                                    <span class="text-lg font-bold text-purple-600" id="response-rate-text">0%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Quick Actions -->
+            <section class="animate-slide-up">
+                <div class="bg-surface rounded-2xl p-6 shadow-elegant">
+                    <h2 class="font-display font-semibold text-xl text-text-primary mb-6">Quick Actions</h2>
+                    <div class="flex flex-wrap gap-4">
+                        <button onclick="refreshData()" class="btn-primary px-6 py-3 text-white rounded-xl font-medium flex items-center space-x-2">
+                            <i data-feather="refresh-cw" class="w-4 h-4"></i>
+                            <span>Refresh Data</span>
+                        </button>
+                        <button onclick="simulateReview()" class="bg-transparent border-2 border-primary text-primary px-6 py-3 rounded-xl font-medium hover:bg-primary hover:text-white transition-all duration-200 flex items-center space-x-2">
+                            <i data-feather="plus-circle" class="w-4 h-4"></i>
+                            <span>Simulate Review</span>
+                        </button>
+                        <button onclick="exportData()" class="bg-transparent border-2 border-secondary text-secondary px-6 py-3 rounded-xl font-medium hover:bg-secondary hover:text-white transition-all duration-200 flex items-center space-x-2">
+                            <i data-feather="download" class="w-4 h-4"></i>
+                            <span>Export Data</span>
+                        </button>
+                        <a href="/health" target="_blank" class="bg-transparent border-2 border-success text-success px-6 py-3 rounded-xl font-medium hover:bg-success hover:text-white transition-all duration-200 flex items-center space-x-2">
+                            <i data-feather="activity" class="w-4 h-4"></i>
+                            <span>System Status</span>
+                        </a>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Recent Reviews -->
+            <section class="animate-slide-up">
+                <div class="bg-surface rounded-2xl shadow-elegant overflow-hidden">
+                    <div class="p-6 border-b border-border-light">
+                        <div class="flex items-center justify-between">
+                            <h2 class="font-display font-semibold text-xl text-text-primary">Recent Reviews</h2>
+                            <div class="flex items-center space-x-3">
+                                <div class="relative">
+                                    <i data-feather="search" class="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-text-tertiary"></i>
+                                    <input type="text" placeholder="Search reviews..." class="pl-10 pr-4 py-2 border border-border-light rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm">
+                                </div>
+                                <button class="p-2 text-text-secondary hover:text-text-primary hover:bg-background rounded-lg transition-colors">
+                                    <i data-feather="filter" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-background">
+                                <tr>
+                                    <th class="text-left py-4 px-6 font-medium text-text-secondary text-sm uppercase tracking-wider">Review</th>
+                                    <th class="text-left py-4 px-6 font-medium text-text-secondary text-sm uppercase tracking-wider">Platform</th>
+                                    <th class="text-left py-4 px-6 font-medium text-text-secondary text-sm uppercase tracking-wider">Status</th>
+                                    <th class="text-left py-4 px-6 font-medium text-text-secondary text-sm uppercase tracking-wider">Confidence</th>
+                                    <th class="text-left py-4 px-6 font-medium text-text-secondary text-sm uppercase tracking-wider">Date</th>
+                                    <th class="text-left py-4 px-6 font-medium text-text-secondary text-sm uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reviews-table" class="divide-y divide-border-light">
+                                <!-- Reviews will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Reviews Section -->
+        <div id="reviews-section" class="section-content p-8 space-y-8 hidden">
+            <h1 class="font-display font-semibold text-2xl text-text-primary mb-6">Review Management</h1>
+            
+            <!-- Review Queue -->
+            <div class="bg-surface rounded-2xl shadow-elegant overflow-hidden">
+                <div class="p-6 border-b border-border-light">
+                    <h2 class="font-display font-semibold text-xl text-text-primary">Pending Reviews</h2>
+                    <p class="text-text-secondary text-sm mt-1">Reviews awaiting your approval</p>
+                </div>
+                <div id="review-queue" class="p-6">
+                    <!-- Review cards will be populated here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Brand Voice Section -->
+        <div id="brand-voice-section" class="section-content p-8 space-y-8 hidden">
+            <h1 class="font-display font-semibold text-2xl text-text-primary mb-6">Brand Voice Settings</h1>
+            
+            <div class="bg-surface rounded-2xl p-6 shadow-elegant">
+                <h2 class="font-display font-semibold text-xl text-text-primary mb-6">Configure Your AI Assistant</h2>
+                
+                <form id="brand-voice-form" class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-text-primary mb-2">Brand Tone</label>
+                        <select id="brand-tone" class="w-full p-3 border border-border-light rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                            <option value="professional">Professional</option>
+                            <option value="friendly">Friendly</option>
+                            <option value="casual">Casual</option>
+                            <option value="luxury">Luxury</option>
+                            <option value="tech-savvy">Tech-Savvy</option>
+                            <option value="warm">Warm & Personal</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-text-primary mb-2">Industry</label>
+                        <select id="industry" class="w-full p-3 border border-border-light rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                            <option value="ecommerce">E-commerce</option>
+                            <option value="saas">SaaS</option>
+                            <option value="retail">Retail</option>
+                            <option value="health-beauty">Health & Beauty</option>
+                            <option value="technology">Technology</option>
+                            <option value="fashion">Fashion</option>
+                            <option value="home-garden">Home & Garden</option>
+                            <option value="handmade">Handmade/Artisan</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-text-primary mb-2">Key Messages</label>
+                        <textarea id="key-messages" class="w-full p-3 border border-border-light rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" rows="4" placeholder="Enter key messages you want to emphasize in responses (e.g., 'quality craftsmanship', 'customer satisfaction', 'fast shipping')"></textarea>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-text-primary mb-2">Response Style</label>
+                        <div class="grid grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs text-text-secondary mb-1">Formality</label>
+                                <input type="range" id="formality" min="1" max="5" value="3" class="w-full accent-primary">
+                                <div class="flex justify-between text-xs text-text-tertiary mt-1">
+                                    <span>Casual</span>
+                                    <span>Formal</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs text-text-secondary mb-1">Empathy</label>
+                                <input type="range" id="empathy" min="1" max="5" value="4" class="w-full accent-primary">
+                                <div class="flex justify-between text-xs text-text-tertiary mt-1">
+                                    <span>Direct</span>
+                                    <span>Warm</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs text-text-secondary mb-1">Length</label>
+                                <input type="range" id="length" min="1" max="5" value="3" class="w-full accent-primary">
+                                <div class="flex justify-between text-xs text-text-tertiary mt-1">
+                                    <span>Brief</span>
+                                    <span>Detailed</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex space-x-4">
+                        <button type="button" onclick="saveBrandSettings()" class="btn-primary px-6 py-3 text-white rounded-xl font-medium flex items-center space-x-2">
+                            <i data-feather="save" class="w-4 h-4"></i>
+                            <span>Save Settings</span>
+                        </button>
+                        <button type="button" onclick="testBrandVoice()" class="bg-transparent border-2 border-primary text-primary px-6 py-3 rounded-xl font-medium hover:bg-primary hover:text-white transition-all duration-200 flex items-center space-x-2">
+                            <i data-feather="play" class="w-4 h-4"></i>
+                            <span>Test Voice</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Preview Section -->
+            <div id="brand-voice-preview" class="bg-surface rounded-2xl p-6 shadow-elegant hidden">
+                <h3 class="font-display font-semibold text-lg text-text-primary mb-4">Voice Preview</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-text-secondary mb-2">Test with sample review:</label>
+                        <p class="bg-background p-4 rounded-lg text-text-primary italic">"Great product! Fast shipping and excellent quality. Highly recommend!"</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-text-secondary mb-2">AI Response Preview:</label>
+                        <div class="bg-primary/5 p-4 rounded-lg border border-primary/20">
+                            <p id="preview-response" class="text-text-primary">Configure your brand voice settings to see a preview...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analytics Section -->
+        <div id="analytics-section" class="section-content p-8 space-y-8 hidden">
+            <h1 class="font-display font-semibold text-2xl text-text-primary mb-6">Analytics & Insights</h1>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-surface rounded-2xl p-6 shadow-elegant">
+                    <h3 class="font-display font-semibold text-lg text-text-primary mb-4">Response Performance</h3>
+                    <div class="text-center py-12 text-text-tertiary">
+                        <i data-feather="bar-chart-2" class="w-16 h-16 mx-auto mb-4 opacity-50"></i>
+                        <p>Analytics dashboard coming soon</p>
+                    </div>
+                </div>
+                
+                <div class="bg-surface rounded-2xl p-6 shadow-elegant">
+                    <h3 class="font-display font-semibold text-lg text-text-primary mb-4">Platform Breakdown</h3>
+                    <div class="text-center py-12 text-text-tertiary">
+                        <i data-feather="pie-chart" class="w-16 h-16 mx-auto mb-4 opacity-50"></i>
+                        <p>Platform analytics coming soon</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Integrations Section -->
+        <div id="integrations-section" class="section-content p-8 space-y-8 hidden">
+            <h1 class="font-display font-semibold text-2xl text-text-primary mb-6">Platform Integrations</h1>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="bg-surface rounded-2xl p-6 shadow-elegant hover-lift">
+                    <div class="flex items-center space-x-4 mb-4">
+                        <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                            <i data-feather="shopping-bag" class="w-6 h-6 text-green-600"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-display font-semibold text-text-primary">Shopify</h3>
+                            <p class="text-text-secondary text-sm">E-commerce platform</p>
+                        </div>
+                    </div>
+                    <button class="w-full btn-primary py-2 text-white rounded-lg font-medium text-sm">
+                        Connect
+                    </button>
+                </div>
+                
+                <div class="bg-surface rounded-2xl p-6 shadow-elegant hover-lift">
+                    <div class="flex items-center space-x-4 mb-4">
+                        <div class="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
+                            <i data-feather="package" class="w-6 h-6 text-orange-600"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-display font-semibold text-text-primary">Amazon</h3>
+                            <p class="text-text-secondary text-sm">Marketplace</p>
+                        </div>
+                    </div>
+                    <button class="w-full btn-primary py-2 text-white rounded-lg font-medium text-sm">
+                        Connect
+                    </button>
+                </div>
+                
+                <div class="bg-surface rounded-2xl p-6 shadow-elegant hover-lift">
+                    <div class="flex items-center space-x-4 mb-4">
+                        <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+                            <i data-feather="heart" class="w-6 h-6 text-purple-600"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-display font-semibold text-text-primary">Etsy</h3>
+                            <p class="text-text-secondary text-sm">Handmade marketplace</p>
+                        </div>
+                    </div>
+                    <button class="w-full btn-primary py-2 text-white rounded-lg font-medium text-sm">
+                        Connect
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Initialize Feather icons
+        feather.replace();
+
+        // Auto-collapse functionality
+        let autoCollapseEnabled = true;
+        let manuallyExpanded = false;
+
+        function toggleAutoCollapse() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('main-content');
+            
+            autoCollapseEnabled = !autoCollapseEnabled;
+            
+            if (autoCollapseEnabled) {
+                sidebar.classList.add('sidebar-auto');
+                sidebar.classList.remove('sidebar-expanded');
+                mainContent.classList.remove('ml-80');
+                mainContent.classList.add('ml-20');
+                showNotification('Auto-collapse enabled', 'success');
+            } else {
+                sidebar.classList.remove('sidebar-auto');
+                sidebar.classList.add('sidebar-expanded');
+                mainContent.classList.remove('ml-20');
+                mainContent.classList.add('ml-80');
+                showNotification('Auto-collapse disabled', 'info');
+            }
+        }
+
+        // Handle sidebar hover for main content adjustment
+        document.getElementById('sidebar').addEventListener('mouseenter', () => {
+            if (autoCollapseEnabled) {
+                document.getElementById('main-content').style.marginLeft = '280px';
+            }
+        });
+
+        document.getElementById('sidebar').addEventListener('mouseleave', () => {
+            if (autoCollapseEnabled) {
+                document.getElementById('main-content').style.marginLeft = '80px';
+            }
+        });
+
+        // Navigation functionality
+        function navigateToSection(sectionName) {
+            // Hide all sections
+            document.querySelectorAll('.section-content').forEach(section => {
+                section.classList.add('hidden');
+            });
+            
+            // Show selected section
+            document.getElementById(sectionName + '-section').classList.remove('hidden');
+            
+            // Update header
+            const header = document.querySelector('header h1');
+            const subtitle = document.querySelector('header p');
+            
+            switch(sectionName) {
+                case 'dashboard':
+                    header.textContent = 'Dashboard';
+                    subtitle.textContent = 'Monitor and manage your review responses';
+                    break;
+                case 'reviews':
+                    header.textContent = 'Review Management';
+                    subtitle.textContent = 'Approve and manage AI-generated responses';
+                    break;
+                case 'brand-voice':
+                    header.textContent = 'Brand Voice';
+                    subtitle.textContent = 'Configure your AI assistant personality';
+                    loadBrandSettings();
+                    break;
+                case 'analytics':
+                    header.textContent = 'Analytics';
+                    subtitle.textContent = 'Performance insights and metrics';
+                    break;
+                case 'integrations':
+                    header.textContent = 'Integrations';
+                    subtitle.textContent = 'Connect your e-commerce platforms';
+                    break;
+            }
+            
+            // Update active nav item
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.target.closest('.nav-item').classList.add('active');
+            
+            // Load section-specific data
+            if (sectionName === 'reviews') {
+                loadReviewQueue();
+            }
+        }
+
+        // Brand Voice functionality
+        async function loadBrandSettings() {
+            try {
+                const response = await fetch('/api/brand-settings');
+                const settings = await response.json();
+                
+                // Populate form with current settings
+                document.getElementById('brand-tone').value = settings.tone || 'friendly';
+                document.getElementById('key-messages').value = settings.key_phrases?.join(', ') || '';
+                
+                // Set default values for new fields
+                document.getElementById('formality').value = settings.formality || 3;
+                document.getElementById('empathy').value = settings.empathy || 4;
+                document.getElementById('length').value = settings.length || 3;
+                
+            } catch (error) {
+                console.error('Error loading brand settings:', error);
+            }
+        }
+
+        async function saveBrandSettings() {
+            const settings = {
+                tone: document.getElementById('brand-tone').value,
+                industry: document.getElementById('industry').value,
+                key_phrases: document.getElementById('key-messages').value.split(',').map(p => p.trim()).filter(p => p),
+                formality: parseInt(document.getElementById('formality').value),
+                empathy: parseInt(document.getElementById('empathy').value),
+                length: parseInt(document.getElementById('length').value)
+            };
+
+            try {
+                const response = await fetch('/api/brand-settings', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(settings)
+                });
+
+                if (response.ok) {
+                    showNotification('Brand voice settings saved successfully!', 'success');
+                    // Show preview section
+                    document.getElementById('brand-voice-preview').classList.remove('hidden');
+                    testBrandVoice();
+                } else {
+                    showNotification('Failed to save brand settings', 'error');
+                }
+            } catch (error) {
+                console.error('Error saving brand settings:', error);
+                showNotification('Error saving brand settings', 'error');
+            }
+        }
+
+        async function testBrandVoice() {
+            const previewResponse = document.getElementById('preview-response');
+            previewResponse.textContent = 'Generating preview...';
+            
+            // Show preview section
+            document.getElementById('brand-voice-preview').classList.remove('hidden');
+            
+            const settings = {
+                tone: document.getElementById('brand-tone').value,
+                industry: document.getElementById('industry').value,
+                key_phrases: document.getElementById('key-messages').value.split(',').map(p => p.trim()).filter(p => p),
+                formality: parseInt(document.getElementById('formality').value),
+                empathy: parseInt(document.getElementById('empathy').value),
+                length: parseInt(document.getElementById('length').value)
+            };
+
+            // Generate a sample response based on settings
+            let response = "Thank you so much for your wonderful review! ";
+            
+            switch(settings.tone) {
+                case 'professional':
+                    response = "We appreciate your positive feedback and are pleased to hear that our product met your expectations. ";
+                    break;
+                case 'friendly':
+                    response = "Thank you so much for your wonderful review! We're thrilled that you're happy with your purchase. ";
+                    break;
+                case 'casual':
+                    response = "Awesome review! Thanks for taking the time to share your experience. ";
+                    break;
+                case 'luxury':
+                    response = "We are delighted by your refined appreciation of our craftsmanship. ";
+                    break;
+                case 'tech-savvy':
+                    response = "Thanks for the great feedback! We're glad our solution delivered the performance you expected. ";
+                    break;
+                case 'warm':
+                    response = "Your kind words truly warm our hearts! We're so happy you love your purchase. ";
+                    break;
+            }
+
+            if (settings.empathy >= 4) {
+                response += "Your satisfaction means everything to us. ";
+            }
+
+            if (settings.key_phrases.length > 0) {
+                response += `We take pride in our ${settings.key_phrases[0]}. `;
+            }
+
+            if (settings.length >= 4) {
+                response += "We look forward to serving you again and continuing to exceed your expectations with our products and service.";
+            } else if (settings.length >= 3) {
+                response += "We look forward to serving you again!";
+            } else {
+                response += "Thanks again!";
+            }
+
+            // Simulate a slight delay for realism
+            setTimeout(() => {
+                previewResponse.textContent = response;
+            }, 1000);
+        }
+
+        async function loadReviewQueue() {
+            try {
+                const response = await fetch('/api/reviews/pending');
+                const data = await response.json();
+                updateReviewQueue(data.reviews || []);
+            } catch (error) {
+                console.error('Error loading review queue:', error);
+            }
+        }
+
+        function updateReviewQueue(reviews) {
+            const container = document.getElementById('review-queue');
+            
+            if (reviews.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12">
+                        <div class="mx-auto w-24 h-24 bg-background rounded-full flex items-center justify-center mb-4">
+                            <i data-feather="inbox" class="w-12 h-12 text-text-tertiary"></i>
+                        </div>
+                        <h3 class="font-display font-medium text-text-primary mb-2">No pending reviews</h3>
+                        <p class="text-text-secondary text-sm mb-4">All reviews have been processed</p>
+                        <button onclick="simulateReview()" class="btn-primary px-6 py-2 text-white rounded-lg font-medium">
+                            Generate Sample Review
+                        </button>
+                    </div>
+                `;
+                feather.replace();
+                return;
+            }
+
+            container.innerHTML = reviews.filter(r => r.status === 'pending').map(review => `
+                <div class="border border-border-light rounded-xl p-6 mb-4 hover-lift">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-3 mb-4">
+                                <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                                    <i data-feather="user" class="w-5 h-5 text-primary"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-medium text-text-primary">${review.reviewer_name || 'Anonymous'}</h4>
+                                    <p class="text-sm text-text-secondary">${review.platform || 'Unknown Platform'} • ${new Date(review.created_at).toLocaleDateString()}</p>
+                                </div>
+                                <div class="flex items-center space-x-1">
+                                    ${Array.from({length: 5}, (_, i) => `
+                                        <i data-feather="star" class="w-4 h-4 ${i < (review.rating || 5) ? 'text-yellow-400 fill-current' : 'text-gray-300'}"></i>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <h5 class="font-medium text-text-primary mb-2">Original Review:</h5>
+                                <p class="text-text-secondary bg-background p-4 rounded-lg">${review.review_text}</p>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <h5 class="font-medium text-text-primary mb-2 flex items-center">
+                                    <i data-feather="zap" class="w-4 h-4 mr-2 text-primary"></i>
+                                    AI Generated Response:
+                                </h5>
+                                <div class="bg-primary/5 p-4 rounded-lg border border-primary/20">
+                                    <p class="text-text-primary">${review.ai_response || 'Response is being generated...'}</p>
+                                    <div class="flex items-center justify-between mt-3 text-sm">
+                                        <div class="flex items-center text-text-secondary">
+                                            <i data-feather="target" class="w-4 h-4 mr-1"></i>
+                                            Confidence: <span class="font-medium ml-1 ${
+                                                (review.confidence_score || 85) >= 90 ? 'text-success' : 
+                                                (review.confidence_score || 85) >= 75 ? 'text-warning' : 'text-danger'
+                                            }">${review.confidence_score || 85}%</span>
+                                        </div>
+                                        <div class="flex items-center text-text-tertiary text-xs">
+                                            <i data-feather="clock" class="w-3 h-3 mr-1"></i>
+                                            Generated ${new Date(review.created_at).toLocaleTimeString('en-US', { 
+                                                hour: '2-digit', minute: '2-digit' 
+                                            })}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center justify-between pt-4 border-t border-border-light">
+                        <div class="flex items-center space-x-3">
+                            <button onclick="handleReview('${review.id}', 'approve')" class="btn-primary px-6 py-3 text-white rounded-lg font-medium text-sm flex items-center space-x-2 hover:shadow-lg transform hover:scale-105 transition-all">
+                                <i data-feather="check" class="w-4 h-4"></i>
+                                <span>Approve & Publish</span>
+                            </button>
+                            <button onclick="handleReview('${review.id}', 'reject')" class="bg-danger text-white px-6 py-3 rounded-lg font-medium text-sm flex items-center space-x-2 hover:bg-red-700 hover:shadow-lg transform hover:scale-105 transition-all">
+                                <i data-feather="x" class="w-4 h-4"></i>
+                                <span>Reject</span>
+                            </button>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button onclick="regenerateResponse('${review.id}')" class="text-text-secondary hover:text-primary flex items-center space-x-1 text-sm px-3 py-2 rounded-lg hover:bg-primary/5 transition-all">
+                                <i data-feather="refresh-cw" class="w-4 h-4"></i>
+                                <span>Regenerate</span>
+                            </button>
+                            <button onclick="editResponse('${review.id}')" class="text-text-secondary hover:text-text-primary flex items-center space-x-1 text-sm px-3 py-2 rounded-lg hover:bg-background transition-all">
+                                <i data-feather="edit-2" class="w-4 h-4"></i>
+                                <span>Edit</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            feather.replace();
+        }
+
+        function editResponse(reviewId) {
+            showNotification('Response editing coming soon', 'info');
+        }
+
+        async function regenerateResponse(reviewId) {
+            try {
+                showNotification('Regenerating AI response...', 'info');
+                
+                // Call regenerate API endpoint (you would need to implement this)
+                // For now, simulate by calling the simulate review again
+                await simulateReview();
+                
+                showNotification('Response regenerated successfully!', 'success');
+                loadReviewQueue();
+            } catch (error) {
+                console.error('Error regenerating response:', error);
+                showNotification('Failed to regenerate response', 'error');
+            }
+        }
+
+        function createReviewModal(reviewId) {
+            showNotification('Review details modal coming soon', 'info');
+        }
+
+        function showLoginModal() {
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            modal.innerHTML = `
+                <div class="bg-surface rounded-2xl p-8 w-full max-w-md mx-4 shadow-elegant-xl">
+                    <div class="text-center mb-6">
+                        <div class="w-16 h-16 bg-gradient-to-br from-primary to-blue-600 rounded-xl flex items-center justify-center mx-auto mb-4">
+                            <i data-feather="zap" class="w-8 h-8 text-white"></i>
+                        </div>
+                        <h2 class="font-display font-semibold text-2xl text-text-primary">Welcome to ResponseAI</h2>
+                        <p class="text-text-secondary text-sm mt-2">Sign in to manage your review responses</p>
+                    </div>
+                    
+                    <form class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-text-primary mb-2">Email</label>
+                            <input type="email" class="w-full p-3 border border-border-light rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="your@email.com">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-text-primary mb-2">Password</label>
+                            <input type="password" class="w-full p-3 border border-border-light rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="••••••••">
+                        </div>
+                        <button type="button" onclick="handleLogin()" class="w-full btn-primary py-3 text-white rounded-lg font-medium">
+                            Sign In
+                        </button>
+                    </form>
+                    
+                    <div class="mt-6 text-center">
+                        <p class="text-text-secondary text-sm">
+                            Don't have an account? 
+                            <button onclick="showSignupModal()" class="text-primary hover:underline font-medium">Sign up</button>
+                        </p>
+                    </div>
+                    
+                    <button onclick="closeModal()" class="absolute top-4 right-4 p-2 text-text-secondary hover:text-text-primary rounded-lg">
+                        <i data-feather="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            feather.replace();
+            
+            // Close on backdrop click
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closeModal();
+            });
+        }
+
+        function showSignupModal() {
+            closeModal();
+            
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            modal.innerHTML = `
+                <div class="bg-surface rounded-2xl p-8 w-full max-w-md mx-4 shadow-elegant-xl">
+                    <div class="text-center mb-6">
+                        <div class="w-16 h-16 bg-gradient-to-br from-primary to-blue-600 rounded-xl flex items-center justify-center mx-auto mb-4">
+                            <i data-feather="zap" class="w-8 h-8 text-white"></i>
+                        </div>
+                        <h2 class="font-display font-semibold text-2xl text-text-primary">Create Account</h2>
+                        <p class="text-text-secondary text-sm mt-2">Start automating your review responses</p>
+                    </div>
+                    
+                    <form class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-text-primary mb-2">Full Name</label>
+                            <input type="text" class="w-full p-3 border border-border-light rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="John Smith">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-text-primary mb-2">Email</label>
+                            <input type="email" class="w-full p-3 border border-border-light rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="your@email.com">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-text-primary mb-2">Password</label>
+                            <input type="password" class="w-full p-3 border border-border-light rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="••••••••">
+                        </div>
+                        <button type="button" onclick="handleSignup()" class="w-full btn-primary py-3 text-white rounded-lg font-medium">
+                            Create Account
+                        </button>
+                    </form>
+                    
+                    <div class="mt-6 text-center">
+                        <p class="text-text-secondary text-sm">
+                            Already have an account? 
+                            <button onclick="showLoginModal()" class="text-primary hover:underline font-medium">Sign in</button>
+                        </p>
+                    </div>
+                    
+                    <button onclick="closeModal()" class="absolute top-4 right-4 p-2 text-text-secondary hover:text-text-primary rounded-lg">
+                        <i data-feather="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            feather.replace();
+            
+            // Close on backdrop click
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closeModal();
+            });
+        }
+
+        function handleLogin() {
+            // Simulate login success
+            showNotification('Login successful! Welcome back.', 'success');
+            closeModal();
+        }
+
+        function handleSignup() {
+            // Simulate signup success
+            showNotification('Account created successfully! Welcome to ResponseAI.', 'success');
+            closeModal();
+        }
+
+        function showUserMenu() {
+            showNotification('User menu coming soon', 'info');
+        }
+
+        function closeModal() {
+            const modal = document.querySelector('.fixed.inset-0');
+            if (modal) {
+                document.body.removeChild(modal);
+            }
+        }
+
+        // Sidebar toggle functionality - Remove old implementation
+        // Auto-collapse is now handled above
+
+        // Data management
+        async function loadDashboardData() {
+            try {
+                const response = await fetch('/api/reviews/pending');
+                const reviews = await response.json();
+                
+                updateMetrics(reviews);
+                updateReviewsTable(reviews);
+                
+                // Animate metrics
+                animateMetrics();
+            } catch (error) {
+                console.error('Error loading data:', error);
+                showNotification('Error loading data', 'error');
+            }
+        }
+
+        function updateMetrics(reviews) {
+            const total = reviews.length;
+            const pending = reviews.filter(r => r.status === 'pending_approval').length;
+            const published = reviews.filter(r => r.status === 'published').length;
+            const responseRate = total > 0 ? Math.round((published / total) * 100) : 0;
+
+            // Update numbers
+            document.getElementById('total-reviews').textContent = total;
+            document.getElementById('pending-reviews').textContent = pending;
+            document.getElementById('published-reviews').textContent = published;
+            document.getElementById('response-rate').textContent = responseRate + '%';
+            document.getElementById('response-rate-text').textContent = responseRate + '%';
+            document.getElementById('pending-count').textContent = pending;
+
+            // Update progress bar
+            const progressBar = document.getElementById('response-rate-bar');
+            progressBar.style.width = responseRate + '%';
+
+            // Update circular progress
+            const circle = document.getElementById('response-rate-circle');
+            const circumference = 175.93;
+            const offset = circumference - (responseRate / 100) * circumference;
+            circle.style.strokeDashoffset = offset;
+        }
+
+        function animateMetrics() {
+            // Add subtle animation to metric cards
+            document.querySelectorAll('.metric-card').forEach((card, index) => {
+                setTimeout(() => {
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+        }
+
+        function updateReviewsTable(reviews) {
+            const tbody = document.getElementById('reviews-table');
+
+            if (reviews.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="px-6 py-16 text-center">
+                            <div class="mx-auto w-24 h-24 bg-background rounded-full flex items-center justify-center mb-4">
+                                <i data-feather="message-circle" class="w-12 h-12 text-text-tertiary"></i>
+                            </div>
+                            <h3 class="font-display font-medium text-text-primary mb-2">No reviews yet</h3>
+                            <p class="text-text-secondary text-sm mb-4">Reviews will appear here when received from your connected platforms.</p>
+                            <button onclick="simulateReview()" class="btn-primary px-6 py-2 text-white rounded-lg font-medium">
+                                Simulate a Review
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                feather.replace();
+                return;
+            }
+
+            tbody.innerHTML = reviews.slice(0, 10).map(review => {
+                const confidence = review.confidence_score || Math.floor(Math.random() * 30) + 70;
+                const confidenceColor = confidence >= 85 ? 'success' : confidence >= 70 ? 'warning' : 'danger';
+                
+                return `
+                    <tr class="table-row">
+                        <td class="px-6 py-4">
+                            <div class="max-w-md">
+                                <p class="text-text-primary font-medium truncate">${review.review_text?.substring(0, 60) || 'N/A'}...</p>
+                                <p class="text-text-tertiary text-sm">${review.reviewer_name || 'Anonymous'}</p>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                                <i data-feather="shopping-bag" class="w-3 h-3 mr-1"></i>
+                                ${review.platform || 'Shopify'}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="status-badge status-${review.status || 'pending'}">
+                                ${(review.status || 'pending').charAt(0).toUpperCase() + (review.status || 'pending').slice(1)}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex items-center space-x-2">
+                                <div class="w-12 h-2 bg-gray-200 rounded-full">
+                                    <div class="h-2 rounded-full ${
+                                        confidence >= 85 ? 'bg-success' : 
+                                        confidence >= 70 ? 'bg-warning' : 'bg-danger'
+                                    }" style="width: ${confidence}%"></div>
+                                </div>
+                                <span class="text-sm font-medium ${
+                                    confidence >= 85 ? 'text-success' : 
+                                    confidence >= 70 ? 'text-warning' : 'text-danger'
+                                }">${confidence}%</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 text-text-secondary text-sm">
+                            ${new Date(review.created_at).toLocaleDateString('en-US', { 
+                                month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
+                            })}
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex items-center space-x-2">
+                                ${review.status === 'pending' ? `
+                                    <button onclick="handleReview('${review.id}', 'approve')" 
+                                            class="p-2 text-success hover:bg-success/10 rounded-lg transition-colors" 
+                                            title="Approve">
+                                        <i data-feather="check" class="w-4 h-4"></i>
+                                    </button>
+                                    <button onclick="handleReview('${review.id}', 'reject')" 
+                                            class="p-2 text-danger hover:bg-danger/10 rounded-lg transition-colors" 
+                                            title="Reject">
+                                        <i data-feather="x" class="w-4 h-4"></i>
+                                    </button>
+                                    <button onclick="viewReview('${review.id}')" 
+                                            class="p-2 text-text-secondary hover:bg-background rounded-lg transition-colors" 
+                                            title="View Details">
+                                        <i data-feather="eye" class="w-4 h-4"></i>
+                                    </button>
+                                ` : `
+                                    <span class="text-text-tertiary text-sm capitalize">${review.status}</span>
+                                `}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            
+            feather.replace();
+        }
+
+        // Action handlers
+        async function handleReview(reviewId, action) {
+            try {
+                const endpoint = `/reviews/${reviewId}/${action}`;
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        approved_reply: action === 'approve' ? 'Thank you for your review!' : null
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    showNotification(`Review ${action}d successfully`, 'success');
+                    refreshData();
+                } else {
+                    const error = await response.json();
+                    showNotification(error.message || 'Error processing review', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showNotification('Error processing review', 'error');
+            }
+        }
+
+        function viewReview(reviewId) {
+            // Create and show review detail modal
+            createReviewModal(reviewId);
+        }
+
+        async function simulateReview() {
+            console.log('simulateReview called');
+            try {
+                const response = await fetch('/api/reviews/simulate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                console.log('Response received:', response.status);
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('Success result:', result);
+                    showNotification('Sample review generated successfully!', 'success');
+                    setTimeout(refreshData, 1000);
+                } else {
+                    const error = await response.json();
+                    console.log('Error response:', error);
+                    showNotification(error.message || 'Failed to generate review', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showNotification('Failed to generate review', 'error');
+            }
+        }
+
+        function refreshData() {
+            loadDashboardData();
+            showNotification('Data refreshed', 'success');
+        }
+
+        function exportData() {
+            fetch('/api/reviews/pending')
+                .then(response => response.json())
+                .then(data => {
+                    const csv = convertToCSV(data.reviews || []);
+                    downloadCSV(csv, `reviews-${new Date().toISOString().split('T')[0]}.csv`);
+                    showNotification('Data exported successfully', 'success');
+                })
+                .catch(error => {
+                    console.error('Export error:', error);
+                    showNotification('Export failed', 'error');
+                });
+        }
+
+        // Utility functions
+        function convertToCSV(reviews) {
+            if (reviews.length === 0) return '';
+            
+            const headers = ['ID', 'Review Text', 'Platform', 'Status', 'Created At'];
+            const rows = reviews.map(review => [
+                review.id,
+                `"${(review.review_text || '').replace(/"/g, '""')}"`,
+                review.platform || '',
+                review.status || '',
+                review.created_at || ''
+            ]);
+            
+            return [headers, ...rows].map(row => row.join(',')).join('\n');
+        }
+
+        function downloadCSV(csv, filename) {
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        function showNotification(message, type = 'info') {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 z-50 px-6 py-4 rounded-xl shadow-elegant-lg transform translate-x-full transition-transform duration-300 ease-out ${
+                type === 'success' ? 'bg-success text-white' :
+                type === 'error' ? 'bg-danger text-white' :
+                type === 'warning' ? 'bg-warning text-white' :
+                'bg-primary text-white'
+            }`;
+            
+            notification.innerHTML = `
+                <div class="flex items-center space-x-2">
+                    <i data-feather="${
+                        type === 'success' ? 'check-circle' :
+                        type === 'error' ? 'x-circle' :
+                        type === 'warning' ? 'alert-triangle' :
+                        'info'
+                    }" class="w-4 h-4"></i>
+                    <span class="font-medium">${message}</span>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            feather.replace();
+            
+            // Animate in
+            setTimeout(() => {
+                notification.style.transform = 'translateX(0)';
+            }, 100);
+            
+            // Auto-remove after 3 seconds
+            setTimeout(() => {
+                notification.style.transform = 'translateX(full)';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadDashboardData();
+            
+            // Auto-refresh every 30 seconds
+            setInterval(loadDashboardData, 30000);
+        });
+    </script>
+</body>
+</html>
