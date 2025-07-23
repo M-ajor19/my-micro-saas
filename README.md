@@ -198,14 +198,4 @@ Track key metrics:
 4. **Rate Limiting:** Implement in production
 5. **HTTPS:** Use SSL certificates
 
-## 📞 Support
 
-For issues or questions:
-1. Check the console logs for errors
-2. Verify API keys are set correctly
-3. Ensure all dependencies are installed
-4. Test with the built-in simulation tools
-
----
-
-**Happy automating! 🤖✨**
