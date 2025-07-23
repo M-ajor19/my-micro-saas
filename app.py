@@ -534,8 +534,8 @@ def reject_review(review_id):
 
 @app.route('/')
 def index():
-    """Serve the NEXUS CONSCIOUSNESS LAB as the main interface"""
-    return send_from_directory('.', 'sentient-ai-lab.html')
+    """Serve the minimal dashboard as the main interface"""
+    return send_from_directory('.', 'minimal-dashboard.html')
 
 @app.route('/dashboard.html')
 def dashboard():
@@ -547,7 +547,10 @@ def prompt_lab():
     """Serve the prompt lab page"""
     return send_from_directory('.', 'prompt-lab.html')
 
-@app.route('/sentient-ai-lab.html')
+@app.route('/minimal-dashboard.html')
+def minimal_dashboard():
+    """Serve the minimal dashboard page"""
+    return send_from_directory('.', 'minimal-dashboard.html')
 def sentient_ai_lab():
     """Serve the Sentient AI Laboratory page"""
     return send_from_directory('.', 'sentient-ai-lab.html')
@@ -588,14 +591,12 @@ def health_check():
     """Health check endpoint for deployment platforms"""
     return jsonify({
         "status": "healthy",
-        "service": "NEXUS CONSCIOUSNESS LAB - AI Review Response Platform",
-        "version": "2.0.0",
+        "service": "ResponseAI - Review Management Platform",
+        "version": "1.0.0",
         "endpoints": {
             "main": "/",
-            "nexus_lab": "/sentient-ai-lab.html",
-            "webhook": "/webhook/new-review",
-            "dashboard": "/dashboard.html",
-            "prompt_lab": "/prompt-lab.html"
+            "dashboard": "/minimal-dashboard.html",
+            "webhook": "/webhook/new-review"
         }
     }), 200
 
