@@ -166,16 +166,72 @@
             bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
-            width: 4px;
-            height: 20px;
-            background: rgba(76, 124, 255, 0.3);
-            border-radius: 2px;
-            transition: all 0.3s ease;
+            width: 2px;
+            height: 12px;
+            background: rgba(76, 124, 255, 0.2);
+            border-radius: 1px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 0.7;
         }
         
         .sidebar-auto:hover .auto-collapse-indicator {
-            background: rgba(76, 124, 255, 0.6);
-            height: 30px;
+            background: rgba(76, 124, 255, 0.4);
+            height: 16px;
+            opacity: 1;
+        }
+        
+        /* User Menu Dropdown */
+        .user-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 8px;
+            width: 240px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border: 1px solid #E5E7EB;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1000;
+        }
+        
+        .user-menu.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        
+        .user-menu-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            color: #374151;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.15s ease;
+            border-radius: 8px;
+            margin: 4px;
+        }
+        
+        .user-menu-item:hover {
+            background: #F3F4F6;
+            color: #4C7CFF;
+        }
+        
+        .user-menu-item i {
+            width: 16px;
+            height: 16px;
+            margin-right: 12px;
+        }
+        
+        .user-menu-divider {
+            height: 1px;
+            background: #E5E7EB;
+            margin: 4px 16px;
         }
         
         .status-badge {
@@ -298,8 +354,47 @@
                     <button onclick="showLoginModal()" class="text-text-secondary hover:text-text-primary text-sm font-medium">
                         Sign In
                     </button>
-                    <div class="w-8 h-8 bg-gradient-to-br from-primary to-blue-600 rounded-full flex items-center justify-center cursor-pointer" onclick="showUserMenu()">
-                        <i data-feather="user" class="w-4 h-4 text-white"></i>
+                    <div class="relative">
+                        <div class="w-8 h-8 bg-gradient-to-br from-primary to-blue-600 rounded-full flex items-center justify-center cursor-pointer" onclick="toggleUserMenu()">
+                            <i data-feather="user" class="w-4 h-4 text-white"></i>
+                        </div>
+                        <!-- User Menu Dropdown -->
+                        <div id="user-menu" class="user-menu">
+                            <div class="p-3 border-b border-gray-100">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 bg-gradient-to-br from-primary to-blue-600 rounded-full flex items-center justify-center">
+                                        <i data-feather="user" class="w-5 h-5 text-white"></i>
+                                    </div>
+                                    <div>
+                                        <div class="font-medium text-gray-900">John Doe</div>
+                                        <div class="text-sm text-gray-500">john@example.com</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="py-1">
+                                <a href="#" class="user-menu-item" onclick="showProfile()">
+                                    <i data-feather="user"></i>
+                                    <span>Profile</span>
+                                </a>
+                                <a href="#" class="user-menu-item" onclick="showSettings()">
+                                    <i data-feather="settings"></i>
+                                    <span>Settings</span>
+                                </a>
+                                <a href="#" class="user-menu-item" onclick="showBilling()">
+                                    <i data-feather="credit-card"></i>
+                                    <span>Billing</span>
+                                </a>
+                                <div class="user-menu-divider"></div>
+                                <a href="#" class="user-menu-item" onclick="showHelp()">
+                                    <i data-feather="help-circle"></i>
+                                    <span>Help & Support</span>
+                                </a>
+                                <a href="#" class="user-menu-item text-red-600 hover:text-red-700 hover:bg-red-50" onclick="logout()">
+                                    <i data-feather="log-out"></i>
+                                    <span>Sign Out</span>
+                                </a>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1093,9 +1188,49 @@
             closeModal();
         }
 
-        function showUserMenu() {
-            showNotification('User menu coming soon', 'info');
+        // User Menu Functions
+        function toggleUserMenu() {
+            const menu = document.getElementById('user-menu');
+            menu.classList.toggle('show');
+            // Ensure feather icons are rendered in the menu
+            setTimeout(() => feather.replace(), 10);
         }
+        
+        function showProfile() {
+            toggleUserMenu();
+            showNotification('Profile settings coming soon', 'info');
+        }
+        
+        function showSettings() {
+            toggleUserMenu();
+            showNotification('Settings panel coming soon', 'info');
+        }
+        
+        function showBilling() {
+            toggleUserMenu();
+            showNotification('Billing management coming soon', 'info');
+        }
+        
+        function showHelp() {
+            toggleUserMenu();
+            showNotification('Help & Support coming soon', 'info');
+        }
+        
+        function logout() {
+            toggleUserMenu();
+            showNotification('Signed out successfully', 'success');
+            // Add logout logic here
+        }
+        
+        // Close user menu when clicking outside
+        document.addEventListener('click', function(event) {
+            const menu = document.getElementById('user-menu');
+            const avatar = event.target.closest('[onclick="toggleUserMenu()"]');
+            
+            if (menu && !menu.contains(event.target) && !avatar) {
+                menu.classList.remove('show');
+            }
+        });
 
         function closeModal() {
             const modal = document.querySelector('.fixed.inset-0');
