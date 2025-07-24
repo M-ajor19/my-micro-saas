@@ -456,6 +456,67 @@ def update_brand_settings():
     # For MVP, we'll just return success
     return jsonify({"message": "Brand settings updated successfully"}), 200
 
+@app.route('/api/profile', methods=['GET'])
+def get_profile():
+    # Mock profile data for demo
+    profile = {
+        "name": "John Doe",
+        "email": "john@example.com", 
+        "company": "Acme Corp",
+        "phone": "+1 (555) 123-4567",
+        "created_at": "2025-01-15",
+        "plan": "Pro"
+    }
+    return jsonify(profile), 200
+
+@app.route('/api/profile', methods=['POST'])
+def update_profile():
+    data = request.json
+    # In a real app, this would update user profile in database
+    # For MVP, we'll just return success
+    return jsonify({"message": "Profile updated successfully"}), 200
+
+@app.route('/api/settings', methods=['GET'])
+def get_settings():
+    # Mock settings data for demo
+    settings = {
+        "emailNotifications": True,
+        "reviewAlerts": True,
+        "weeklySummary": False,
+        "darkMode": False,
+        "compactView": False,
+        "autoApproveThreshold": "95% confidence"
+    }
+    return jsonify(settings), 200
+
+@app.route('/api/settings', methods=['POST'])
+def update_settings():
+    data = request.json
+    # In a real app, this would update user settings in database
+    # For MVP, we'll just return success
+    print("Settings updated:", data)
+    return jsonify({"message": "Settings updated successfully"}), 200
+
+@app.route('/api/billing', methods=['GET'])
+def get_billing():
+    # Mock billing data for demo
+    billing = {
+        "plan": "Pro",
+        "price": 29,
+        "currency": "USD",
+        "billing_period": "monthly",
+        "responses_used": 247,
+        "responses_limit": 1000,
+        "next_billing_date": "2025-08-23",
+        "payment_method": {
+            "type": "card",
+            "brand": "visa",
+            "last4": "4242"
+        },
+        "usage_percentage": 25
+    }
+    return jsonify(billing), 200
+
 # --- Endpoint for Publishing Approved Reply (Your Frontend Calls This) ---
 @app.route('/publish-reply', methods=['POST'])
 @app.route('/reviews/<review_id>/approve', methods=['POST'])  # RESTful endpoint for dashboard

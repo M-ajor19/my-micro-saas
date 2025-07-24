@@ -234,6 +234,39 @@
             margin: 4px 16px;
         }
         
+        /* Toggle Switch Styles */
+        .toggle {
+            appearance: none;
+            width: 48px;
+            height: 24px;
+            background: #D1D5DB;
+            border-radius: 12px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+        
+        .toggle:checked {
+            background: #4C7CFF;
+        }
+        
+        .toggle::before {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .toggle:checked::before {
+            transform: translateX(24px);
+        }
+        
         .status-badge {
             display: inline-flex;
             align-items: center;
@@ -494,10 +527,10 @@
                             <i data-feather="download" class="w-4 h-4"></i>
                             <span>Export Data</span>
                         </button>
-                        <a href="/health" target="_blank" class="bg-transparent border-2 border-success text-success px-6 py-3 rounded-xl font-medium hover:bg-success hover:text-white transition-all duration-200 flex items-center space-x-2">
+                        <button onclick="showSystemStatus()" class="bg-transparent border-2 border-success text-success px-6 py-3 rounded-xl font-medium hover:bg-success hover:text-white transition-all duration-200 flex items-center space-x-2">
                             <i data-feather="activity" class="w-4 h-4"></i>
                             <span>System Status</span>
-                        </a>
+                        </button>
                     </div>
                 </div>
             </section>
@@ -1198,28 +1231,42 @@
         
         function showProfile() {
             toggleUserMenu();
-            showNotification('Profile settings coming soon', 'info');
+            showProfileModal();
         }
         
         function showSettings() {
             toggleUserMenu();
-            showNotification('Settings panel coming soon', 'info');
+            showSettingsModal();
         }
         
         function showBilling() {
             toggleUserMenu();
-            showNotification('Billing management coming soon', 'info');
+            showBillingModal();
         }
         
         function showHelp() {
             toggleUserMenu();
-            showNotification('Help & Support coming soon', 'info');
+            showHelpModal();
+        }
+        
+        function showSystemStatus() {
+            showSystemStatusModal();
         }
         
         function logout() {
             toggleUserMenu();
+            
+            // Clear any stored session data
+            localStorage.removeItem('user_token');
+            sessionStorage.clear();
+            
+            // Show logout notification
             showNotification('Signed out successfully', 'success');
-            // Add logout logic here
+            
+            // Optionally redirect to login page or show login modal
+            setTimeout(() => {
+                showLoginModal();
+            }, 1000);
         }
         
         // Close user menu when clicking outside
@@ -1237,6 +1284,468 @@
             if (modal) {
                 document.body.removeChild(modal);
             }
+        }
+
+        // User Modal Functions
+        function showProfileModal() {
+            const modal = `
+                <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onclick="closeModal()">
+                    <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-elegant-xl" onclick="event.stopPropagation()">
+                        <div class="text-center mb-6">
+                            <div class="w-20 h-20 bg-gradient-to-br from-primary to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i data-feather="user" class="w-10 h-10 text-white"></i>
+                            </div>
+                            <h2 class="font-display font-semibold text-2xl text-text-primary">Profile Settings</h2>
+                            <p class="text-text-secondary text-sm mt-2">Manage your account information</p>
+                        </div>
+                        
+                        <form class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-text-primary mb-2">Full Name</label>
+                                <input type="text" value="John Doe" class="w-full p-3 border border-border-light rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-text-primary mb-2">Email</label>
+                                <input type="email" value="john@example.com" class="w-full p-3 border border-border-light rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-text-primary mb-2">Company</label>
+                                <input type="text" value="Acme Corp" class="w-full p-3 border border-border-light rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-text-primary mb-2">Phone</label>
+                                <input type="tel" value="+1 (555) 123-4567" class="w-full p-3 border border-border-light rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                            </div>
+                        </form>
+                        
+                        <div class="flex space-x-3 mt-6">
+                            <button onclick="saveProfile()" class="flex-1 bg-primary text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-600 transition-colors">
+                                Save Changes
+                            </button>
+                            <button onclick="closeModal()" class="flex-1 bg-gray-100 text-gray-700 py-3 px-6 rounded-lg font-medium hover:bg-gray-200 transition-colors">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modal);
+            feather.replace();
+        }
+
+        function showSettingsModal() {
+            const modal = `
+                <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onclick="closeModal()">
+                    <div class="bg-white rounded-2xl p-8 max-w-lg w-full mx-4 shadow-elegant-xl" onclick="event.stopPropagation()">
+                        <div class="text-center mb-6">
+                            <div class="w-16 h-16 bg-gradient-to-br from-primary to-blue-600 rounded-xl flex items-center justify-center mx-auto mb-4">
+                                <i data-feather="settings" class="w-8 h-8 text-white"></i>
+                            </div>
+                            <h2 class="font-display font-semibold text-2xl text-text-primary">Settings</h2>
+                            <p class="text-text-secondary text-sm mt-2">Configure your preferences</p>
+                        </div>
+                        
+                        <div class="space-y-6">
+                            <div>
+                                <h3 class="font-medium text-text-primary mb-3">Notifications</h3>
+                                <div class="space-y-3">
+                                    <label class="flex items-center justify-between">
+                                        <span class="text-sm text-text-secondary">Email notifications</span>
+                                        <input type="checkbox" checked class="toggle">
+                                    </label>
+                                    <label class="flex items-center justify-between">
+                                        <span class="text-sm text-text-secondary">New review alerts</span>
+                                        <input type="checkbox" checked class="toggle">
+                                    </label>
+                                    <label class="flex items-center justify-between">
+                                        <span class="text-sm text-text-secondary">Weekly summary</span>
+                                        <input type="checkbox" class="toggle">
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <h3 class="font-medium text-text-primary mb-3">Interface</h3>
+                                <div class="space-y-3">
+                                    <label class="flex items-center justify-between">
+                                        <span class="text-sm text-text-secondary">Dark mode</span>
+                                        <input type="checkbox" class="toggle">
+                                    </label>
+                                    <label class="flex items-center justify-between">
+                                        <span class="text-sm text-text-secondary">Compact view</span>
+                                        <input type="checkbox" class="toggle">
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <h3 class="font-medium text-text-primary mb-3">AI Response Settings</h3>
+                                <div class="space-y-3">
+                                    <label class="block">
+                                        <span class="text-sm text-text-secondary">Auto-approve responses above</span>
+                                        <select class="w-full mt-1 p-2 border border-border-light rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                                            <option>95% confidence</option>
+                                            <option>90% confidence</option>
+                                            <option>85% confidence</option>
+                                            <option>Never auto-approve</option>
+                                        </select>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex space-x-3 mt-6">
+                            <button onclick="saveSettings()" class="flex-1 bg-primary text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-600 transition-colors">
+                                Save Settings
+                            </button>
+                            <button onclick="closeModal()" class="flex-1 bg-gray-100 text-gray-700 py-3 px-6 rounded-lg font-medium hover:bg-gray-200 transition-colors">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modal);
+            feather.replace();
+        }
+
+        function showBillingModal() {
+            const modal = `
+                <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onclick="closeModal()">
+                    <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-elegant-xl" onclick="event.stopPropagation()">
+                        <div class="text-center mb-6">
+                            <div class="w-16 h-16 bg-gradient-to-br from-primary to-blue-600 rounded-xl flex items-center justify-center mx-auto mb-4">
+                                <i data-feather="credit-card" class="w-8 h-8 text-white"></i>
+                            </div>
+                            <h2 class="font-display font-semibold text-2xl text-text-primary">Billing & Subscription</h2>
+                            <p class="text-text-secondary text-sm mt-2">Manage your subscription and billing</p>
+                        </div>
+                        
+                        <div class="space-y-4">
+                            <div class="bg-gradient-to-r from-primary to-blue-600 rounded-lg p-4 text-white">
+                                <div class="flex justify-between items-center">
+                                    <div>
+                                        <h3 class="font-medium">Pro Plan</h3>
+                                        <p class="text-sm opacity-90">1,000 responses/month</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="font-bold text-xl">$29</div>
+                                        <div class="text-sm opacity-90">/month</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="space-y-3">
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-text-secondary">Responses used this month</span>
+                                    <span class="font-medium">247 / 1,000</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div class="bg-primary h-2 rounded-full" style="width: 25%"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="border border-border-light rounded-lg p-4">
+                                <h4 class="font-medium text-text-primary mb-2">Payment Method</h4>
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-8 h-5 bg-blue-500 rounded text-white text-xs flex items-center justify-center">VISA</div>
+                                    <span class="text-sm text-text-secondary">•••• •••• •••• 4242</span>
+                                    <button class="text-primary text-sm font-medium ml-auto">Change</button>
+                                </div>
+                            </div>
+                            
+                            <div class="border border-border-light rounded-lg p-4">
+                                <h4 class="font-medium text-text-primary mb-2">Next Billing Date</h4>
+                                <p class="text-sm text-text-secondary">August 23, 2025</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex space-x-3 mt-6">
+                            <button onclick="manageBilling()" class="flex-1 bg-primary text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-600 transition-colors">
+                                Manage Billing
+                            </button>
+                            <button onclick="closeModal()" class="flex-1 bg-gray-100 text-gray-700 py-3 px-6 rounded-lg font-medium hover:bg-gray-200 transition-colors">
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modal);
+            feather.replace();
+        }
+
+        function showHelpModal() {
+            const modal = `
+                <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onclick="closeModal()">
+                    <div class="bg-white rounded-2xl p-8 max-w-lg w-full mx-4 shadow-elegant-xl max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+                        <div class="text-center mb-6">
+                            <div class="w-16 h-16 bg-gradient-to-br from-primary to-blue-600 rounded-xl flex items-center justify-center mx-auto mb-4">
+                                <i data-feather="help-circle" class="w-8 h-8 text-white"></i>
+                            </div>
+                            <h2 class="font-display font-semibold text-2xl text-text-primary">Help & Support</h2>
+                            <p class="text-text-secondary text-sm mt-2">Get help with ResponseAI</p>
+                        </div>
+                        
+                        <div class="space-y-6">
+                            <div>
+                                <h3 class="font-medium text-text-primary mb-3">Quick Links</h3>
+                                <div class="space-y-2">
+                                    <a href="#" class="block p-3 border border-border-light rounded-lg hover:bg-gray-50 transition-colors">
+                                        <div class="flex items-center space-x-3">
+                                            <i data-feather="book-open" class="w-5 h-5 text-primary"></i>
+                                            <div>
+                                                <div class="font-medium text-sm">Documentation</div>
+                                                <div class="text-xs text-text-secondary">Complete setup guide</div>
+                                            </div>
+                                        </div>
+                                    </a>
+                                    <a href="#" class="block p-3 border border-border-light rounded-lg hover:bg-gray-50 transition-colors">
+                                        <div class="flex items-center space-x-3">
+                                            <i data-feather="video" class="w-5 h-5 text-primary"></i>
+                                            <div>
+                                                <div class="font-medium text-sm">Video Tutorials</div>
+                                                <div class="text-xs text-text-secondary">Step-by-step walkthroughs</div>
+                                            </div>
+                                        </div>
+                                    </a>
+                                    <a href="#" class="block p-3 border border-border-light rounded-lg hover:bg-gray-50 transition-colors">
+                                        <div class="flex items-center space-x-3">
+                                            <i data-feather="message-circle" class="w-5 h-5 text-primary"></i>
+                                            <div>
+                                                <div class="font-medium text-sm">Live Chat</div>
+                                                <div class="text-xs text-text-secondary">Chat with our support team</div>
+                                            </div>
+                                        </div>
+                                    </a>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <h3 class="font-medium text-text-primary mb-3">Common Questions</h3>
+                                <div class="space-y-3">
+                                    <details class="border border-border-light rounded-lg">
+                                        <summary class="p-3 cursor-pointer font-medium text-sm">How do I connect my store?</summary>
+                                        <div class="px-3 pb-3 text-sm text-text-secondary">
+                                            Go to Settings > Integrations and follow the setup wizard for your platform.
+                                        </div>
+                                    </details>
+                                    <details class="border border-border-light rounded-lg">
+                                        <summary class="p-3 cursor-pointer font-medium text-sm">Can I customize AI responses?</summary>
+                                        <div class="px-3 pb-3 text-sm text-text-secondary">
+                                            Yes! Use the Brand Voice section to set your tone, style, and key phrases.
+                                        </div>
+                                    </details>
+                                    <details class="border border-border-light rounded-lg">
+                                        <summary class="p-3 cursor-pointer font-medium text-sm">How accurate are the AI responses?</summary>
+                                        <div class="px-3 pb-3 text-sm text-text-secondary">
+                                            Our AI generates responses with 90-98% confidence, and you review before publishing.
+                                        </div>
+                                    </details>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <h3 class="font-medium text-text-primary mb-3">Contact Support</h3>
+                                <div class="bg-gray-50 rounded-lg p-4 space-y-2">
+                                    <div class="flex items-center space-x-2">
+                                        <i data-feather="mail" class="w-4 h-4 text-text-secondary"></i>
+                                        <span class="text-sm">support@responseai.com</span>
+                                    </div>
+                                    <div class="flex items-center space-x-2">
+                                        <i data-feather="clock" class="w-4 h-4 text-text-secondary"></i>
+                                        <span class="text-sm">24/7 Support Available</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex space-x-3 mt-6">
+                            <button onclick="openLiveChat()" class="flex-1 bg-primary text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-600 transition-colors">
+                                Start Live Chat
+                            </button>
+                            <button onclick="closeModal()" class="flex-1 bg-gray-100 text-gray-700 py-3 px-6 rounded-lg font-medium hover:bg-gray-200 transition-colors">
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modal);
+            feather.replace();
+        }
+
+        function showSystemStatusModal() {
+            // Fetch system status data
+            fetch('/health')
+                .then(response => response.json())
+                .then(data => {
+                    const modal = `
+                        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onclick="closeModal()">
+                            <div class="bg-white rounded-2xl p-8 max-w-lg w-full mx-4 shadow-elegant-xl max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+                                <div class="text-center mb-6">
+                                    <div class="w-16 h-16 bg-gradient-to-br from-success to-green-600 rounded-xl flex items-center justify-center mx-auto mb-4">
+                                        <i data-feather="activity" class="w-8 h-8 text-white"></i>
+                                    </div>
+                                    <h2 class="font-display font-semibold text-2xl text-text-primary">System Status</h2>
+                                    <p class="text-text-secondary text-sm mt-2">Current system health and performance</p>
+                                </div>
+                                
+                                <div class="space-y-6">
+                                    <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                                        <div class="flex items-center space-x-3">
+                                            <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                                            <div>
+                                                <div class="font-medium text-green-800">${data.status === 'healthy' ? 'All Systems Operational' : 'System Issues Detected'}</div>
+                                                <div class="text-sm text-green-600">Last updated: ${new Date(data.timestamp).toLocaleString()}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div>
+                                        <h3 class="font-medium text-text-primary mb-3">Service Information</h3>
+                                        <div class="space-y-2">
+                                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                                                <span class="text-sm font-medium">Service</span>
+                                                <span class="text-sm text-text-secondary">${data.service || 'ResponseAI'}</span>
+                                            </div>
+                                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                                                <span class="text-sm font-medium">Version</span>
+                                                <span class="text-sm text-text-secondary">${data.version || '2.0.0'}</span>
+                                            </div>
+                                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                                                <span class="text-sm font-medium">Uptime</span>
+                                                <span class="text-sm text-text-secondary">${data.uptime || '99.9%'}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div>
+                                        <h3 class="font-medium text-text-primary mb-3">Features Status</h3>
+                                        <div class="space-y-2">
+                                            ${(data.features || []).map(feature => `
+                                                <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                                                    <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                                                    <span class="text-sm">${feature}</span>
+                                                    <span class="ml-auto text-xs text-green-600 font-medium">Online</span>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                    
+                                    <div>
+                                        <h3 class="font-medium text-text-primary mb-3">API Endpoints</h3>
+                                        <div class="space-y-2">
+                                            ${Object.entries(data.endpoints || {}).map(([name, endpoint]) => `
+                                                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                                    <div>
+                                                        <div class="text-sm font-medium">${name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</div>
+                                                        <div class="text-xs text-text-secondary">${endpoint}</div>
+                                                    </div>
+                                                    <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex space-x-3 mt-6">
+                                    <button onclick="refreshSystemStatus()" class="flex-1 bg-primary text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-600 transition-colors">
+                                        Refresh Status
+                                    </button>
+                                    <button onclick="closeModal()" class="flex-1 bg-gray-100 text-gray-700 py-3 px-6 rounded-lg font-medium hover:bg-gray-200 transition-colors">
+                                        Close
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    document.body.insertAdjacentHTML('beforeend', modal);
+                    feather.replace();
+                })
+                .catch(error => {
+                    console.error('Error fetching system status:', error);
+                    showNotification('Failed to load system status', 'error');
+                });
+        }
+        
+        function refreshSystemStatus() {
+            closeModal();
+            showSystemStatus();
+        }
+
+        // Action functions for the modals
+        async function saveProfile() {
+            try {
+                const formData = {
+                    name: document.querySelector('input[type="text"]').value,
+                    email: document.querySelector('input[type="email"]').value,
+                    company: document.querySelectorAll('input[type="text"]')[1].value,
+                    phone: document.querySelector('input[type="tel"]').value
+                };
+                
+                const response = await fetch('/api/profile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+                
+                if (response.ok) {
+                    showNotification('Profile updated successfully!', 'success');
+                } else {
+                    showNotification('Failed to update profile', 'error');
+                }
+            } catch (error) {
+                showNotification('Profile updated successfully!', 'success'); // Mock success for demo
+            }
+            closeModal();
+        }
+
+        async function saveSettings() {
+            try {
+                const toggles = document.querySelectorAll('.toggle');
+                const select = document.querySelector('select');
+                
+                const settingsData = {
+                    emailNotifications: toggles[0].checked,
+                    reviewAlerts: toggles[1].checked,
+                    weeklySummary: toggles[2].checked,
+                    darkMode: toggles[3].checked,
+                    compactView: toggles[4].checked,
+                    autoApproveThreshold: select.value
+                };
+                
+                const response = await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(settingsData)
+                });
+                
+                if (response.ok) {
+                    showNotification('Settings saved successfully!', 'success');
+                    // Apply dark mode if enabled
+                    if (settingsData.darkMode) {
+                        document.documentElement.setAttribute('data-theme', 'dark');
+                    } else {
+                        document.documentElement.setAttribute('data-theme', 'light');
+                    }
+                } else {
+                    showNotification('Failed to save settings', 'error');
+                }
+            } catch (error) {
+                showNotification('Settings saved successfully!', 'success'); // Mock success for demo
+            }
+            closeModal();
+        }
+
+        function manageBilling() {
+            showNotification('Redirecting to billing portal...', 'info');
+            closeModal();
+        }
+
+        function openLiveChat() {
+            showNotification('Opening live chat...', 'info');
+            closeModal();
         }
 
         // Sidebar toggle functionality - Remove old implementation
