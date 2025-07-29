@@ -12,6 +12,9 @@ import hmac
 # Import our AES encryption utilities
 from encryption_utils import AESEncryption, encrypt_json, decrypt_json, generate_secure_key
 
+# Import Google AI service
+from google_ai_service import GoogleAIService
+
 load_dotenv()
 
 app = Flask(__name__)
@@ -20,6 +23,10 @@ CORS(app)  # Enable CORS for frontend communication
 # Initialize AES encryption
 # In production, use a secure environment variable for ENCRYPTION_KEY
 encryption = AESEncryption()
+
+# Initialize Google AI Service
+google_api_key = os.environ.get("GOOGLE_API_KEY")
+ai_service = GoogleAIService(google_api_key)
 
 # Simple file-based storage for MVP
 REVIEW_DB_FILE = "reviews_db.json"
@@ -885,13 +892,13 @@ def simulate_review():
 
 @app.route('/')
 def index():
-    """Serve the elite dashboard as the main interface"""
+    """Serve the React app index file"""
     try:
-        return send_from_directory('.', 'elite-dashboard.html')
+        return send_from_directory('./public', 'index.html')
     except Exception as e:
         return jsonify({
             "status": "error",
-            "message": f"Failed to serve dashboard: {str(e)}",
+            "message": f"Failed to serve app: {str(e)}",
             "available_endpoints": ["/health", "/api/status", "/dashboard.html"]
         }), 500
 
@@ -931,7 +938,17 @@ def api_status():
 @app.route('/dashboard.html')
 def dashboard():
     """Serve the dashboard page"""
-    return send_from_directory('.', 'dashboard.html')
+    return send_from_directory('.', 'elite-dashboard.html')
+
+@app.route('/static/<path:filename>')
+def serve_static(filename):
+    """Serve static files for React app"""
+    return send_from_directory('./src', filename)
+
+@app.route('/components/<path:filename>')
+def serve_components(filename):
+    """Serve React components"""
+    return send_from_directory('./src/components', filename)
 
 @app.route('/prompt-lab.html')
 def prompt_lab():
@@ -1067,41 +1084,23 @@ def get_ai_insights():
 
 @app.route('/api/ai/improvements', methods=['GET'])
 def get_improvement_suggestions():
-    """Get demo improvement suggestions"""
+    """Get AI-generated improvement suggestions using Google AI"""
     try:
         reviews = load_reviews()
-        
-        # Demo suggestions
-        demo_suggestions = {
-            "product_improvements": [
-                "Consider faster shipping options",
-                "Improve packaging quality",
-                "Add size guide for better fit"
-            ],
-            "service_improvements": [
-                "Implement live chat support",
-                "Create detailed FAQ section",
-                "Offer proactive order updates"
-            ],
-            "response_improvements": [
-                "Personalize responses more",
-                "Address specific concerns mentioned",
-                "Follow up on negative feedback"
-            ]
-        }
+        suggestions = ai_service.generate_improvements(reviews)
         
         return jsonify({
-            "suggestions": demo_suggestions,
+            "suggestions": suggestions,
             "based_on_reviews": len(reviews),
-            "ai_powered": False,
-            "demo_mode": True
+            "ai_powered": suggestions.get('ai_powered', False),
+            "model": "google-gemini-pro" if suggestions.get('ai_powered') else "demo"
         }), 200
     except Exception as e:
         return jsonify({"error": f"Failed to generate suggestions: {str(e)}"}), 500
 
 @app.route('/api/ai/analyze-sentiment', methods=['POST'])
 def analyze_review_sentiment():
-    """Analyze sentiment with demo analysis"""
+    """Analyze sentiment using Google AI"""
     data = request.json
     review_text = data.get('review_text', '')
     
@@ -1109,43 +1108,20 @@ def analyze_review_sentiment():
         return jsonify({"error": "Review text is required"}), 400
     
     try:
-        # Simple demo sentiment analysis
-        positive_words = ['good', 'great', 'excellent', 'amazing', 'love', 'perfect', 'best']
-        negative_words = ['bad', 'terrible', 'awful', 'worst', 'hate', 'disappointed']
-        
-        text_lower = review_text.lower()
-        positive_count = sum(1 for word in positive_words if word in text_lower)
-        negative_count = sum(1 for word in negative_words if word in text_lower)
-        
-        if positive_count > negative_count:
-            sentiment = "positive"
-            confidence = 0.8
-        elif negative_count > positive_count:
-            sentiment = "negative"
-            confidence = 0.8
-        else:
-            sentiment = "neutral"
-            confidence = 0.6
-        
-        analysis = {
-            "sentiment": sentiment,
-            "confidence": confidence,
-            "positive_indicators": positive_count,
-            "negative_indicators": negative_count
-        }
+        analysis = ai_service.analyze_sentiment(review_text)
         
         return jsonify({
             "sentiment_analysis": analysis,
-            "detected_language": "en",
-            "ai_powered": False,
-            "demo_mode": True
+            "detected_language": "en",  # Could be enhanced to detect language
+            "ai_powered": analysis.get('ai_powered', False),
+            "model": "google-gemini-pro" if analysis.get('ai_powered') else "demo"
         }), 200
     except Exception as e:
         return jsonify({"error": f"Failed to analyze sentiment: {str(e)}"}), 500
 
 @app.route('/api/ai/generate-response', methods=['POST'])
 def generate_ai_response():
-    """Generate demo response for a specific review"""
+    """Generate AI response using Google AI"""
     data = request.json
     review_text = data.get('review_text', '')
     rating = data.get('rating', 3)
@@ -1161,29 +1137,30 @@ def generate_ai_response():
         if not brand_settings:
             brand_settings = get_user_brand_tone(user_id)
         
-        # Generate demo response based on rating
-        if rating >= 4:
-            demo_response = f"Thank you so much for your wonderful {rating}-star review! We're thrilled that you enjoyed your experience with us."
-        elif rating == 3:
-            demo_response = "Thank you for your feedback! We appreciate you taking the time to share your experience and are always working to improve."
-        else:
-            demo_response = f"Thank you for your {rating}-star review. We take all feedback seriously and would love to make this right. Please reach out to us directly."
-        
-        result = {
-            "response": demo_response,
-            "tone": brand_settings.get('tone', 'professional'),
-            "confidence": 0.85,
-            "sentiment": "positive" if rating >= 4 else "neutral" if rating == 3 else "negative"
-        }
+        # Generate AI response using Google AI
+        result = ai_service.generate_ai_response(review_text, rating, brand_settings, language)
         
         return jsonify({
             "ai_response": result,
-            "openai_available": False,
-            "ai_powered": False,
-            "demo_mode": True
+            "google_ai_available": ai_service.model_available,
+            "ai_powered": result.get('ai_powered', False)
         }), 200
     except Exception as e:
         return jsonify({"error": f"Failed to generate response: {str(e)}"}), 500
+
+# Test Google AI connectivity
+@app.route('/api/ai/test-google-ai', methods=['POST'])
+def test_google_ai_connection():
+    """Test Google AI connectivity and functionality"""
+    try:
+        result = ai_service.test_connection()
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Test failed: {str(e)}",
+            "available": False
+        }), 200
 
 @app.route('/api/ai/multilingual-response', methods=['POST'])
 def generate_multilingual_response():
@@ -1672,11 +1649,11 @@ if __name__ == '__main__':
     # For local development, run with `python app.py`
     # In production, use a WSGI server like Gunicorn
     print("Starting AI Review Response Automation Platform...")
-    print("Backend server running on http://localhost:5001")
-    print("Webhook endpoint: http://localhost:5001/webhook/new-review")
+    print("Backend server running on http://localhost:5000")
+    print("Webhook endpoint: http://localhost:5000/webhook/new-review")
     
     # Production-ready configuration
-    port = int(os.environ.get("PORT", 5001))
+    port = int(os.environ.get("PORT", 5000))
     debug_mode = os.environ.get("FLASK_ENV") != "production"
     
     app.run(host="0.0.0.0", port=port, debug=debug_mode)
