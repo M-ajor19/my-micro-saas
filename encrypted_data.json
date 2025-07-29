@@ -1,0 +1,16 @@
+{
+  "users": {},
+  "brand_settings": {},
+  "api_keys": {},
+  "encrypted_profiles": {},
+  "security_test_user": {
+    "profile": {
+      "encrypted_data": "Nv99qE+Kgf7dtbY3XSIhQzJLHWzbZt9f8zugTEDmM28OK6osFK7LAX3umelYJ5BUax14Cyrgez4vzXpgS941zG2BRHAsWypLHQaVY5AVLb19ZDU27lE+y348mNCk8rTl+DIrgQ409IJswhtz9POeNGShsN9k4TyZmBXUY9DLVAwzZimr2zpOcggG0FA/rMvMPz863QxspcDmTD+kfc5dnk8=",
+      "updated_at": "2025-07-28T20:42:55.123448"
+    },
+    "api_keys": {
+      "encrypted_data": "xWH7xSl+8CrBzq2iJThL73bW+dTo7fWNUNgeY4HOVH1mXDEIjC9r3XdhNPXUO8KuuBiPyPGrrzgXuVYj9vdeB5LiwyiyzUqs2yt1qSdNdYL2BHxnnBjH0aqqarHBOeMCd6KbIWSZl7nRzpAUfHQH1E85xI7Hjtnb94wcZU4a06Mb35cmQKfMUzeZ0RK6rWoCkY5+JSZQ7PIEFCgg8p5MoNXsNFmc1JiRuOOhWCP/yTbPa/gjIhg4mHKygNXa2dwCrkl4Gm1RGpXBeBT4gjIwLMSNWFIaoRHZ6A==",
+      "updated_at": "2025-07-28T20:42:55.667078"
+    }
+  }
+}

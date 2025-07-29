@@ -1,26 +1,29 @@
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import os
-import openai
 import json
+import time
 from threading import Lock
 from datetime import datetime
 from dotenv import load_dotenv
 import hashlib
 import hmac
 
+# Import our AES encryption utilities
+from encryption_utils import AESEncryption, encrypt_json, decrypt_json, generate_secure_key
+
 load_dotenv()
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for frontend communication
 
-# --- Configuration (Load from Environment Variables in Production!) ---
-# NEVER hardcode API keys directly in your code for production.
-# For local testing, you might do: export OPENAI_API_KEY='sk-your-openai-key'
-openai.api_key = os.environ.get("OPENAI_API_KEY")
+# Initialize AES encryption
+# In production, use a secure environment variable for ENCRYPTION_KEY
+encryption = AESEncryption()
 
 # Simple file-based storage for MVP
 REVIEW_DB_FILE = "reviews_db.json"
+ENCRYPTED_DATA_FILE = "encrypted_data.json"
 db_lock = Lock()
 
 def load_reviews():
@@ -32,6 +35,54 @@ def load_reviews():
 def save_reviews(reviews):
     with db_lock, open(REVIEW_DB_FILE, "w") as f:
         json.dump(reviews, f, indent=2)
+
+def load_encrypted_data():
+    """Load encrypted data from file"""
+    if not os.path.exists(ENCRYPTED_DATA_FILE):
+        return {"users": {}, "brand_settings": {}, "api_keys": {}, "encrypted_profiles": {}}
+    with db_lock, open(ENCRYPTED_DATA_FILE, "r") as f:
+        return json.load(f)
+
+def save_encrypted_data(data):
+    """Save encrypted data to file"""
+    with db_lock, open(ENCRYPTED_DATA_FILE, "w") as f:
+        json.dump(data, f, indent=2)
+
+def encrypt_and_store_user_data(user_id, data_type, data):
+    """Encrypt and store sensitive user data"""
+    try:
+        encrypted_store = load_encrypted_data()
+        
+        if user_id not in encrypted_store:
+            encrypted_store[user_id] = {}
+        
+        # Encrypt the sensitive data
+        encrypted_data = encryption.encrypt_data(data)
+        encrypted_store[user_id][data_type] = {
+            "encrypted_data": encrypted_data,
+            "updated_at": datetime.now().isoformat()
+        }
+        
+        save_encrypted_data(encrypted_store)
+        return True
+    except Exception as e:
+        print(f"Encryption error: {e}")
+        return False
+
+def decrypt_and_retrieve_user_data(user_id, data_type):
+    """Decrypt and retrieve sensitive user data"""
+    try:
+        encrypted_store = load_encrypted_data()
+        
+        if user_id not in encrypted_store or data_type not in encrypted_store[user_id]:
+            return None
+        
+        encrypted_data = encrypted_store[user_id][data_type]["encrypted_data"]
+        decrypted_data = encryption.decrypt_data(encrypted_data)
+        return decrypted_data
+    except Exception as e:
+        print(f"Decryption error: {e}")
+        return None
 
 def add_review(review):
     reviews = load_reviews()
@@ -341,36 +392,20 @@ def handle_new_review_webhook():
     
     brand_tone_config = get_user_brand_tone(user_id)
     
-    # --- Generate AI Reply (Ideally in a background task) ---
+    # --- Generate Demo Reply ---
     try:
         prompt = generate_review_reply_prompt(review_text, review_rating, brand_tone_config, niche_context)
-        print("Sending prompt to OpenAI:\n" + prompt)
+        print("Generated prompt for demo response:\n" + prompt)
         
-        # Check if OpenAI API key is available
-        if not openai.api_key:
-            print("No OpenAI API key found - using mock response for testing")
-            # Generate a mock response based on rating for testing
-            if int(review_rating) >= 4:
-                ai_generated_reply = "Thank you so much for the wonderful " + str(review_rating) + "-star review! We're thrilled to hear you enjoyed your experience. Your feedback means the world to us and motivates our team to continue delivering quality products. We'd love to serve you again soon!"
-            elif int(review_rating) == 3:
-                ai_generated_reply = "Thank you for your honest " + str(review_rating) + "-star feedback! We appreciate you taking the time to share your experience. We're always working to improve, and your input helps us do better. If there's anything specific we can address, please don't hesitate to reach out."
-            else:
-                ai_generated_reply = "Thank you for your " + str(review_rating) + "-star review and for bringing your concerns to our attention. We sincerely apologize that your experience didn't meet expectations. We'd love the opportunity to make this right - please contact us directly so we can resolve this issue promptly."
+        # Generate demo response based on rating
+        print("Using demo response generation (OpenAI removed)")
+        if int(review_rating) >= 4:
+            ai_generated_reply = "Thank you so much for the wonderful " + str(review_rating) + "-star review! We're thrilled to hear you enjoyed your experience. Your feedback means the world to us and motivates our team to continue delivering quality products. We'd love to serve you again soon!"
+        elif int(review_rating) == 3:
+            ai_generated_reply = "Thank you for your honest " + str(review_rating) + "-star feedback! We appreciate you taking the time to share your experience. We're always working to improve, and your input helps us do better. If there's anything specific we can address, please don't hesitate to reach out."
         else:
-            # Using Chat Completions API which is recommended
-            # model = "gpt-3.5-turbo" or "gpt-4o" for better quality
-            chat_completion = openai.chat.completions.create(
-                model="gpt-3.5-turbo",  # Use a more capable model like "gpt-4o" for better quality
-                messages=[
-                    {"role": "system", "content": "You are a helpful assistant."},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.7,  # Controls randomness. Lower for more predictable, higher for more creative.
-                max_tokens=150  # Limit reply length
-            )
-            ai_generated_reply = chat_completion.choices[0].message.content.strip()
-        
-        print("AI Generated Reply:\n" + ai_generated_reply)
+            ai_generated_reply = "Thank you for your " + str(review_rating) + "-star review and for bringing your concerns to our attention. We sincerely apologize that your experience didn't meet expectations. We'd love the opportunity to make this right - please contact us directly so we can resolve this issue promptly."
+        print("Demo Generated Reply:\n" + ai_generated_reply)
         
         # Save the original review, AI-generated reply, and status ('pending_approval') to storage
         review_obj = {
@@ -388,15 +423,13 @@ def handle_new_review_webhook():
         
         # In a real app, this would return a confirmation that the draft was created
         return jsonify({
-            "message": "Review received, AI draft generated and awaiting approval.", 
+            "message": "Review received, demo response generated and awaiting approval.", 
             "ai_reply_draft": ai_generated_reply,
             "ai_response": ai_generated_reply,  # For test interface compatibility
-            "review_id": review_id
+            "review_id": review_id,
+            "demo_mode": True
         }), 200
         
-    except openai.APIError as e:
-        print("OpenAI API error: " + str(e))
-        return jsonify({"message": "Error generating reply: " + str(e)}), 500
     except Exception as e:
         print("An unexpected error occurred: " + str(e))
         return jsonify({"message": "An internal server error occurred: " + str(e)}), 500
@@ -445,32 +478,72 @@ def get_dashboard_analytics():
 @app.route('/api/brand-settings', methods=['GET'])
 @app.route('/brand-settings', methods=['GET'])  # Alternative endpoint for dashboard
 def get_brand_settings():
-    # In a real app, this would be user-specific
-    return jsonify(get_user_brand_tone("user123")), 200
+    user_id = request.headers.get('X-User-ID', 'demo_user')  # In production, get from auth token
+    
+    # Try to get encrypted brand settings
+    brand_settings = decrypt_and_retrieve_user_data(user_id, 'brand_settings')
+    
+    if not brand_settings:
+        # Return default settings if none exist
+        brand_settings = get_user_brand_tone(user_id)
+    
+    return jsonify(brand_settings), 200
 
 @app.route('/api/brand-settings', methods=['POST'])
 @app.route('/brand-settings', methods=['POST'])  # Alternative endpoint for dashboard
 def update_brand_settings():
-    # In a real app, this would update user-specific settings
+    user_id = request.headers.get('X-User-ID', 'demo_user')  # In production, get from auth token
     data = request.json
-    # For MVP, we'll just return success
-    return jsonify({"message": "Brand settings updated successfully"}), 200
+    
+    # Encrypt and store the brand settings
+    success = encrypt_and_store_user_data(user_id, 'brand_settings', data)
+    
+    if success:
+        return jsonify({"message": "Brand settings updated successfully", "encrypted": True}), 200
+    else:
+        return jsonify({"error": "Failed to save brand settings"}), 500
 
 @app.route('/api/profile', methods=['GET'])
 def get_profile():
-    # Mock profile data for demo
-    profile = {
-        "name": "John Doe",
-        "email": "john@example.com", 
-        "company": "Acme Corp",
-        "phone": "+1 (555) 123-4567",
-        "created_at": "2025-01-15",
-        "plan": "Pro"
-    }
+    user_id = request.headers.get('X-User-ID', 'demo_user')
+    
+    # Try to get encrypted profile
+    profile = decrypt_and_retrieve_user_data(user_id, 'profile')
+    
+    if not profile:
+        # Return mock profile if none exists
+        profile = {
+            "name": "John Doe",
+            "email": "john@example.com", 
+            "company": "Acme Corp",
+            "phone": "+1 (555) 123-4567",
+            "created_at": "2025-01-15",
+            "plan": "Pro"
+        }
+    
     return jsonify(profile), 200
 
 @app.route('/api/profile', methods=['POST'])
 def update_profile():
+    user_id = request.headers.get('X-User-ID', 'demo_user')
+    data = request.json
+    
+    # Filter out sensitive data that shouldn't be stored
+    safe_profile_data = {
+        "name": data.get("name"),
+        "email": data.get("email"),
+        "company": data.get("company"),
+        "phone": data.get("phone"),
+        "updated_at": datetime.now().isoformat()
+    }
+    
+    # Encrypt and store the profile
+    success = encrypt_and_store_user_data(user_id, 'profile', safe_profile_data)
+    
+    if success:
+        return jsonify({"message": "Profile updated successfully", "encrypted": True}), 200
+    else:
+        return jsonify({"error": "Failed to save profile"}), 500
     data = request.json
     # In a real app, this would update user profile in database
     # For MVP, we'll just return success
@@ -478,24 +551,124 @@ def update_profile():
 
 @app.route('/api/settings', methods=['GET'])
 def get_settings():
-    # Mock settings data for demo
-    settings = {
-        "emailNotifications": True,
-        "reviewAlerts": True,
-        "weeklySummary": False,
-        "darkMode": False,
-        "compactView": False,
-        "autoApproveThreshold": "95% confidence"
-    }
+    user_id = request.headers.get('X-User-ID', 'demo_user')
+    
+    # Try to get encrypted settings
+    settings = decrypt_and_retrieve_user_data(user_id, 'settings')
+    
+    if not settings:
+        # Return default settings if none exist
+        settings = {
+            "emailNotifications": True,
+            "reviewAlerts": True,
+            "weeklySummary": False,
+            "darkMode": False,
+            "compactView": False,
+            "autoApproveThreshold": "95% confidence"
+        }
+    
     return jsonify(settings), 200
 
 @app.route('/api/settings', methods=['POST'])
 def update_settings():
+    user_id = request.headers.get('X-User-ID', 'demo_user')
     data = request.json
-    # In a real app, this would update user settings in database
-    # For MVP, we'll just return success
-    print("Settings updated:", data)
-    return jsonify({"message": "Settings updated successfully"}), 200
+    
+    # Encrypt and store the settings
+    success = encrypt_and_store_user_data(user_id, 'settings', data)
+    
+    if success:
+        return jsonify({"message": "Settings updated successfully", "encrypted": True}), 200
+    else:
+        return jsonify({"error": "Failed to save settings"}), 500
+
+# New encrypted API key management endpoints
+@app.route('/api/keys', methods=['GET'])
+def get_api_keys():
+    """Get masked API keys for display"""
+    user_id = request.headers.get('X-User-ID', 'demo_user')
+    
+    # Decrypt API keys
+    api_keys = decrypt_and_retrieve_user_data(user_id, 'api_keys')
+    
+    if not api_keys:
+        return jsonify({"keys": []}), 200
+    
+    # Mask sensitive keys for display
+    masked_keys = {}
+    for service, key_data in api_keys.items():
+        if isinstance(key_data, dict) and 'key' in key_data:
+            key = key_data['key']
+            masked_key = key[:8] + '*' * (len(key) - 12) + key[-4:] if len(key) > 12 else '*' * len(key)
+            masked_keys[service] = {
+                "masked_key": masked_key,
+                "created_at": key_data.get('created_at'),
+                "last_used": key_data.get('last_used'),
+                "status": "active"
+            }
+    
+    return jsonify({"keys": masked_keys}), 200
+
+@app.route('/api/keys', methods=['POST'])
+def store_api_key():
+    """Store encrypted API key"""
+    user_id = request.headers.get('X-User-ID', 'demo_user')
+    data = request.json
+    
+    service = data.get('service')  # e.g., 'openai', 'stripe', 'shopify'
+    api_key = data.get('api_key')
+    
+    if not service or not api_key:
+        return jsonify({"error": "Service and API key are required"}), 400
+    
+    # Get existing keys
+    api_keys = decrypt_and_retrieve_user_data(user_id, 'api_keys') or {}
+    
+    # Add new key with metadata
+    api_keys[service] = {
+        "key": api_key,
+        "created_at": datetime.now().isoformat(),
+        "last_used": None
+    }
+    
+    # Encrypt and store
+    success = encrypt_and_store_user_data(user_id, 'api_keys', api_keys)
+    
+    if success:
+        return jsonify({"message": f"{service} API key stored securely", "encrypted": True}), 200
+    else:
+        return jsonify({"error": "Failed to store API key"}), 500
+
+@app.route('/api/keys/<service>', methods=['DELETE'])
+def delete_api_key(service):
+    """Delete an encrypted API key"""
+    user_id = request.headers.get('X-User-ID', 'demo_user')
+    
+    # Get existing keys
+    api_keys = decrypt_and_retrieve_user_data(user_id, 'api_keys') or {}
+    
+    if service in api_keys:
+        del api_keys[service]
+        
+        # Re-encrypt and store
+        success = encrypt_and_store_user_data(user_id, 'api_keys', api_keys)
+        
+        if success:
+            return jsonify({"message": f"{service} API key deleted"}), 200
+        else:
+            return jsonify({"error": "Failed to delete API key"}), 500
+    else:
+        return jsonify({"error": "API key not found"}), 404
+
+def get_user_api_key(user_id, service):
+    """Helper function to get decrypted API key for internal use"""
+    api_keys = decrypt_and_retrieve_user_data(user_id, 'api_keys')
+    if api_keys and service in api_keys:
+        # Update last used timestamp
+        api_keys[service]['last_used'] = datetime.now().isoformat()
+        encrypt_and_store_user_data(user_id, 'api_keys', api_keys)
+        return api_keys[service]['key']
+    return None
 
 @app.route('/api/billing', methods=['GET'])
 def get_billing():
@@ -648,58 +821,28 @@ def simulate_review():
         # Select a random review
         sample = random.choice(sample_reviews)
         
-        # Generate AI response using the existing AI response generation function
-        brand_settings = get_user_brand_tone("demo_user")  # Use demo brand settings
+        # Get brand settings (encrypted if available)
+        user_id = request.headers.get('X-User-ID', 'demo_user')
+        brand_settings = decrypt_and_retrieve_user_data(user_id, 'brand_settings')
+        if not brand_settings:
+            brand_settings = get_user_brand_tone(user_id)
         
-        # Create the prompt for AI response generation
-        prompt = generate_review_reply_prompt(
+        # Detect language (for future multilingual support)
+        detected_language = ai_service.detect_language(sample["review_text"])
+        
+        # Generate AI response using advanced service
+        print(f"🤖 Generating AI response for {sample['rating']}-star review...")
+        ai_result = ai_service.generate_ai_response(
             sample["review_text"], 
             sample["rating"], 
             brand_settings,
-            "handmade jewelry"  # Default niche for demo
+            detected_language
         )
         
-        # Generate AI response
-        ai_response = "Thank you for your feedback! We truly appreciate you taking the time to share your experience."
-        confidence_score = random.randint(85, 98)
+        # Perform sentiment analysis
+        sentiment_analysis = ai_service.analyze_sentiment_advanced(sample["review_text"])
         
-        # Try to generate real AI response if OpenAI key is available
-        if openai.api_key:
-            try:
-                print("Generating AI response for simulated review...")
-                chat_completion = openai.chat.completions.create(
-                    model="gpt-3.5-turbo",
-                    messages=[{"role": "user", "content": prompt}],
-                    max_tokens=150,
-                    temperature=0.7
-                )
-                ai_response = chat_completion.choices[0].message.content.strip()
-                confidence_score = random.randint(90, 98)  # Higher confidence for real AI
-                print("Generated AI response: " + ai_response)
-            except Exception as e:
-                print("Error generating AI response: " + str(e))
-                # Fall back to template response
-                if sample["rating"] >= 4:
-                    ai_response = "Thank you so much for your wonderful review, " + sample['reviewer_name'] + "! We're thrilled to hear that you had such a positive experience with our product. Your feedback means the world to us and motivates our team to keep delivering exceptional quality. We look forward to serving you again!"
-                else:
-                    ai_response = "Thank you for your honest feedback, " + sample['reviewer_name'] + ". We sincerely apologize that your experience didn't meet your expectations. We take all feedback seriously and would love the opportunity to make this right. Please reach out to our customer service team so we can resolve this issue promptly."
-        else:
-            # Generate intelligent template responses based on rating
-            if sample["rating"] >= 4:
-                templates = [
-                    "Thank you so much for your wonderful review, " + sample['reviewer_name'] + "! We're thrilled to hear that you had such a positive experience with our product. Your feedback means the world to us and motivates our team to keep delivering exceptional quality. We look forward to serving you again!",
-                    "We're absolutely delighted by your review, " + sample['reviewer_name'] + "! It's customers like you who make what we do worthwhile. Thank you for taking the time to share your positive experience - it truly makes our day!",
-                    "What a fantastic review, " + sample['reviewer_name'] + "! We're so happy to hear that we exceeded your expectations. Thank you for choosing us and for spreading the word to your friends!"
-                ]
-            else:
-                templates = [
-                    "Thank you for your honest feedback, " + sample['reviewer_name'] + ". We sincerely apologize that your experience didn't meet your expectations. We take all feedback seriously and would love the opportunity to make this right. Please reach out to our customer service team so we can resolve this issue promptly.",
-                    "We appreciate you taking the time to leave this review, " + sample['reviewer_name'] + ". We're sorry to hear about the issues you experienced. Your feedback helps us improve, and we'd like to work with you to resolve these concerns.",
-                    "Thank you for bringing this to our attention, " + sample['reviewer_name'] + ". We're committed to providing the best possible experience for all our customers. Please contact us directly so we can address your concerns and make things right."
-                ]
-            ai_response = random.choice(templates)
-        
-        # Create review object
+        # Create review object with advanced AI features
         review = {
             "id": str(uuid.uuid4()),
             "review_text": sample["review_text"],
@@ -709,19 +852,33 @@ def simulate_review():
             "status": "pending_approval",
             "created_at": datetime.now().isoformat(),
             "updated_at": datetime.now().isoformat(),
-            "confidence_score": confidence_score,
-            "ai_response": ai_response
+            "confidence_score": ai_result["confidence_score"],
+            "ai_response": ai_result["response"],
+            "language": ai_result["language"],
+            "personalized": ai_result["personalized"],
+            "ai_generated": ai_result["ai_generated"],
+            "sentiment_analysis": sentiment_analysis
         }
         
         # Add to reviews database
         add_review(review)
         
+        # Generate insights if enough reviews
+        all_reviews = load_reviews()
+        insights = {}
+        if len(all_reviews) >= 3:
+            insights = ai_service.generate_predictive_insights(all_reviews[-10:])  # Last 10 reviews
+        
         return jsonify({
-            "message": "Sample review with AI response generated successfully!",
-            "review": review
+            "message": "AI-powered review response generated successfully!",
+            "review": review,
+            "insights": insights,
+            "ai_powered": True,
+            "features_used": ["sentiment_analysis", "personalized_response", "language_detection"]
         }), 200
         
     except Exception as e:
+        print(f"Error in simulate_review: {e}")
         return jsonify({"message": "Failed to generate sample review: " + str(e)}), 500
 
 # --- HEALTH CHECK AND STATIC FILE ENDPOINTS ---
@@ -790,21 +947,289 @@ def sentient_ai_controller_js():
 @app.route('/health', methods=['GET'])
 def health_check():
     """Health check endpoint for deployment platforms"""
+    # Test encryption functionality
+    try:
+        test_data = {"test": "encryption_working"}
+        encrypted = encryption.encrypt_data(test_data)
+        decrypted = encryption.decrypt_data(encrypted)
+        encryption_status = "healthy" if decrypted == test_data else "error"
+    except Exception as e:
+        encryption_status = f"error: {str(e)}"
+    
     return jsonify({
         "status": "healthy",
         "service": "ResponseAI - Intelligent Review Management Platform",
-        "version": "2.0.0",
-        "features": ["AI Response Generation", "Multi-platform Integration", "Real-time Analytics", "Elite Dashboard"],
+        "version": "2.1.0",
+        "features": [
+            "AI Response Generation", 
+            "Multi-platform Integration", 
+            "Real-time Analytics", 
+            "Elite Dashboard",
+            "AES-256-GCM Encryption",
+            "Secure API Key Storage"
+        ],
+        "security": {
+            "encryption": encryption_status,
+            "algorithm": "AES-256-GCM",
+            "key_derivation": "PBKDF2-SHA256"
+        },
         "uptime": "99.9%",
         "endpoints": {
             "main": "/",
             "elite_dashboard": "/elite-dashboard.html",
             "minimal_dashboard": "/minimal-dashboard.html",
             "webhook": "/webhook/new-review",
-            "api": "/api/reviews/pending"
+            "api": "/api/reviews/pending",
+            "encrypted_storage": "/api/keys"
         },
         "timestamp": datetime.now().isoformat()
     }), 200
+
+# Encryption management endpoints
+@app.route('/api/encryption/status', methods=['GET'])
+def encryption_status():
+    """Get encryption system status"""
+    try:
+        # Test encryption/decryption
+        test_data = {"timestamp": datetime.now().isoformat(), "test": True}
+        encrypted = encryption.encrypt_data(test_data)
+        decrypted = encryption.decrypt_data(encrypted)
+        
+        # Count encrypted records
+        encrypted_store = load_encrypted_data()
+        user_count = len(encrypted_store.get('users', {}))
+        
+        return jsonify({
+            "status": "operational",
+            "algorithm": "AES-256-GCM",
+            "key_derivation": "PBKDF2-SHA256",
+            "iterations": 100000,
+            "test_passed": decrypted == test_data,
+            "encrypted_users": user_count,
+            "features": [
+                "Profile encryption",
+                "API key encryption", 
+                "Settings encryption",
+                "Brand voice encryption"
+            ]
+        }), 200
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "error": str(e)
+        }), 500
+
+@app.route('/api/encryption/generate-key', methods=['POST'])
+def generate_new_key():
+    """Generate a new secure encryption key (admin only in production)"""
+    # In production, this should require admin authentication
+    new_key = generate_secure_key()
+    
+    return jsonify({
+        "message": "New encryption key generated",
+        "key": new_key,
+        "note": "Store this key securely as ENCRYPTION_KEY environment variable"
+    }), 200
+
+# Demo AI Endpoints (OpenAI removed due to billing)
+@app.route('/api/ai/insights', methods=['GET'])
+def get_ai_insights():
+    """Get demo analytics insights"""
+    try:
+        reviews = load_reviews()
+        
+        # Demo insights
+        demo_insights = {
+            "trends": {
+                "sentiment_trend": "improving",
+                "response_time_trend": "faster",
+                "customer_satisfaction": "86%"
+            },
+            "predictions": {
+                "next_week_volume": len(reviews) + 5,
+                "satisfaction_forecast": "positive",
+                "areas_to_watch": ["shipping", "product quality"]
+            },
+            "recommendations": [
+                "Focus on positive shipping experience messaging",
+                "Highlight product quality in responses",
+                "Maintain quick response times"
+            ]
+        }
+        
+        return jsonify({
+            "insights": demo_insights,
+            "total_reviews_analyzed": len(reviews),
+            "ai_powered": False,
+            "demo_mode": True
+        }), 200
+    except Exception as e:
+        return jsonify({"error": f"Failed to generate insights: {str(e)}"}), 500
+
+@app.route('/api/ai/improvements', methods=['GET'])
+def get_improvement_suggestions():
+    """Get demo improvement suggestions"""
+    try:
+        reviews = load_reviews()
+        
+        # Demo suggestions
+        demo_suggestions = {
+            "product_improvements": [
+                "Consider faster shipping options",
+                "Improve packaging quality",
+                "Add size guide for better fit"
+            ],
+            "service_improvements": [
+                "Implement live chat support",
+                "Create detailed FAQ section",
+                "Offer proactive order updates"
+            ],
+            "response_improvements": [
+                "Personalize responses more",
+                "Address specific concerns mentioned",
+                "Follow up on negative feedback"
+            ]
+        }
+        
+        return jsonify({
+            "suggestions": demo_suggestions,
+            "based_on_reviews": len(reviews),
+            "ai_powered": False,
+            "demo_mode": True
+        }), 200
+    except Exception as e:
+        return jsonify({"error": f"Failed to generate suggestions: {str(e)}"}), 500
+
+@app.route('/api/ai/analyze-sentiment', methods=['POST'])
+def analyze_review_sentiment():
+    """Analyze sentiment with demo analysis"""
+    data = request.json
+    review_text = data.get('review_text', '')
+    
+    if not review_text:
+        return jsonify({"error": "Review text is required"}), 400
+    
+    try:
+        # Simple demo sentiment analysis
+        positive_words = ['good', 'great', 'excellent', 'amazing', 'love', 'perfect', 'best']
+        negative_words = ['bad', 'terrible', 'awful', 'worst', 'hate', 'disappointed']
+        
+        text_lower = review_text.lower()
+        positive_count = sum(1 for word in positive_words if word in text_lower)
+        negative_count = sum(1 for word in negative_words if word in text_lower)
+        
+        if positive_count > negative_count:
+            sentiment = "positive"
+            confidence = 0.8
+        elif negative_count > positive_count:
+            sentiment = "negative"
+            confidence = 0.8
+        else:
+            sentiment = "neutral"
+            confidence = 0.6
+        
+        analysis = {
+            "sentiment": sentiment,
+            "confidence": confidence,
+            "positive_indicators": positive_count,
+            "negative_indicators": negative_count
+        }
+        
+        return jsonify({
+            "sentiment_analysis": analysis,
+            "detected_language": "en",
+            "ai_powered": False,
+            "demo_mode": True
+        }), 200
+    except Exception as e:
+        return jsonify({"error": f"Failed to analyze sentiment: {str(e)}"}), 500
+
+@app.route('/api/ai/generate-response', methods=['POST'])
+def generate_ai_response():
+    """Generate demo response for a specific review"""
+    data = request.json
+    review_text = data.get('review_text', '')
+    rating = data.get('rating', 3)
+    language = data.get('language', 'en')
+    
+    if not review_text:
+        return jsonify({"error": "Review text is required"}), 400
+    
+    try:
+        # Get user's brand settings
+        user_id = request.headers.get('X-User-ID', 'demo_user')
+        brand_settings = decrypt_and_retrieve_user_data(user_id, 'brand_settings')
+        if not brand_settings:
+            brand_settings = get_user_brand_tone(user_id)
+        
+        # Generate demo response based on rating
+        if rating >= 4:
+            demo_response = f"Thank you so much for your wonderful {rating}-star review! We're thrilled that you enjoyed your experience with us."
+        elif rating == 3:
+            demo_response = "Thank you for your feedback! We appreciate you taking the time to share your experience and are always working to improve."
+        else:
+            demo_response = f"Thank you for your {rating}-star review. We take all feedback seriously and would love to make this right. Please reach out to us directly."
+        
+        result = {
+            "response": demo_response,
+            "tone": brand_settings.get('tone', 'professional'),
+            "confidence": 0.85,
+            "sentiment": "positive" if rating >= 4 else "neutral" if rating == 3 else "negative"
+        }
+        
+        return jsonify({
+            "ai_response": result,
+            "openai_available": False,
+            "ai_powered": False,
+            "demo_mode": True
+        }), 200
+    except Exception as e:
+        return jsonify({"error": f"Failed to generate response: {str(e)}"}), 500
+
+@app.route('/api/ai/multilingual-response', methods=['POST'])
+def generate_multilingual_response():
+    """Generate demo response in multiple languages"""
+    data = request.json
+    review_text = data.get('review_text', '')
+    rating = data.get('rating', 3)
+    target_languages = data.get('languages', ['en'])
+    
+    if not review_text:
+        return jsonify({"error": "Review text is required"}), 400
+    
+    try:
+        user_id = request.headers.get('X-User-ID', 'demo_user')
+        brand_settings = decrypt_and_retrieve_user_data(user_id, 'brand_settings')
+        if not brand_settings:
+            brand_settings = get_user_brand_tone(user_id)
+        
+        # Demo multilingual responses
+        demo_responses = {
+            'en': "Thank you for your review! We appreciate your feedback.",
+            'es': "¡Gracias por tu reseña! Apreciamos tus comentarios.",
+            'fr': "Merci pour votre avis! Nous apprécions vos commentaires.",
+            'de': "Vielen Dank für Ihre Bewertung! Wir schätzen Ihr Feedback.",
+            'it': "Grazie per la tua recensione! Apprezziamo il tuo feedback."
+        }
+        
+        responses = {}
+        for lang in target_languages:
+            base_response = demo_responses.get(lang, demo_responses['en'])
+            responses[lang] = {
+                "response": base_response,
+                "tone": brand_settings.get('tone', 'professional'),
+                "confidence": 0.80,
+                "language": lang
+            }
+        
+        return jsonify({
+            "multilingual_responses": responses,
+            "supported_languages": list(demo_responses.keys()),
+            "demo_mode": True,
+            "ai_powered": False
+        }), 200
+    except Exception as e:
+        return jsonify({"error": f"Failed to generate multilingual responses: {str(e)}"}), 500
 
 # --- PROMPT ENGINEERING TESTING ENDPOINTS ---
 
@@ -887,20 +1312,14 @@ def test_prompt_engineering():
                     brand_config['niche']
                 )
                 
-                # Generate AI response
-                if openai.api_key:
-                    chat_completion = openai.chat.completions.create(
-                        model="gpt-3.5-turbo",
-                        messages=[
-                            {"role": "system", "content": "You are an expert customer service representative."},
-                            {"role": "user", "content": prompt}
-                        ],
-                        temperature=0.7,
-                        max_tokens=200
-                    )
-                    ai_response = chat_completion.choices[0].message.content.strip()
+                # Generate demo response (OpenAI removed)
+                print("Using demo response generation")
+                if scenario['rating'] >= 4:
+                    ai_response = f"Thank you for the wonderful {scenario['rating']}-star review! We're delighted you love your {brand_config['niche']} piece."
+                elif scenario['rating'] == 3:
+                    ai_response = f"Thank you for your honest feedback about your {brand_config['niche']} experience. We appreciate you taking the time to share."
                 else:
-                    ai_response = "[OpenAI API key not configured - simulation mode]"
+                    ai_response = f"Thank you for bringing this to our attention. We take all feedback about our {brand_config['niche']} seriously and want to make this right."
                 
                 results.append({
                     "scenario": scenario['name'],
@@ -1107,105 +1526,38 @@ def generate_response_xai():
         # Create enhanced prompt
         enhanced_prompt = "Generate a response to this review. Original Review: " + review_text + ". Additional Context: " + context + ". Generate a response that acknowledges the customer experience and maintains our brand reputation."
         
-        if openai_api_key:
-            response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": "You are an expert customer service representative who crafts thoughtful, personalized responses to customer reviews. Focus on building relationships and maintaining brand reputation."},
-                    {"role": "user", "content": enhanced_prompt}
-                ],
-                max_tokens=300,
-                temperature=0.7
-            )
-            
-            ai_response = response.choices[0].message.content.strip()
-            
-            # Calculate confidence score based on response quality indicators
-            confidence_score = calculate_confidence_score(ai_response, review_text, sliders)
-            
-            # Generate justifications
-            justifications = generate_justifications(review_text, ai_response, rating, sliders)
-            
-            # Calculate brand voice alignment score
-            brand_voice_score = calculate_brand_voice_score(ai_response, brand_voice)
-            
-            return jsonify({
-                'response': ai_response,
-                'confidence_score': confidence_score,
-                'justifications': justifications,
-                'brand_voice_score': brand_voice_score,
-                'generation_time': round(time.time() % 10, 2),
-                'analysis': {
-                    'tone_applied': tone_descriptor,
-                    'empathy_level': empathy_descriptor,
-                    'length_category': length_descriptor,
-                    'actionability': action_descriptor
-                }
-            })
+        # Generate demo response (OpenAI removed)
+        print("Using demo response generation")
+        if rating >= 4:
+            ai_response = f"Thank you so much for your wonderful {rating}-star review! We're thrilled that you had such a positive experience with us."
+        elif rating == 3:
+            ai_response = "Thank you for taking the time to share your feedback with us. We appreciate your honest review and are always working to improve."
         else:
-            # Enhanced mock response for XAI demo
-            mock_responses = {
-                'positive': "Thank you so much for this wonderful review! We're thrilled to hear about your positive experience. Your feedback motivates our team to continue delivering excellence.",
-                'neutral': "Thank you for taking the time to share your feedback with us. We appreciate your honest assessment and are always looking for ways to improve our service.",
-                'negative': "We sincerely apologize for your disappointing experience. Your feedback is important to us, and we'd like to make this right immediately."
+            ai_response = f"Thank you for your {rating}-star review. We sincerely apologize that your experience didn't meet expectations. We'd love to make this right - please contact us directly."
+        
+        # Calculate demo confidence score
+        confidence_score = 0.75
+        
+        # Generate demo justifications
+        justifications = generate_justifications(review_text, ai_response, rating, sliders)
+        
+        # Calculate brand voice alignment score
+        brand_voice_score = calculate_brand_voice_score(ai_response, brand_voice)
+        
+        return jsonify({
+            'response': ai_response,
+            'confidence_score': confidence_score,
+            'justifications': justifications,
+            'brand_voice_score': brand_voice_score,
+            'generation_time': round(time.time() % 10, 2),
+            'demo_mode': True,
+            'analysis': {
+                'tone_applied': tone_descriptor,
+                'empathy_level': empathy_descriptor,
+                'length_category': length_descriptor,
+                'actionability': action_descriptor
             }
-            
-            # Determine sentiment for mock response
-            positive_words = ['good', 'great', 'excellent', 'amazing', 'love', 'perfect']
-            negative_words = ['bad', 'terrible', 'awful', 'hate', 'disappointed', 'poor']
-            
-            review_lower = review_text.lower()
-            sentiment = 'neutral'
-            
-            if any(word in review_lower for word in positive_words) or int(rating) >= 4:
-                sentiment = 'positive'
-            elif any(word in review_lower for word in negative_words) or int(rating) <= 2:
-                sentiment = 'negative'
-            
-            mock_response = mock_responses[sentiment]
-            
-            # Mock confidence score
-            confidence_score = 85 + (int(rating) * 2) + (len(review_text) // 20)
-            confidence_score = min(confidence_score, 98)
-            
-            # Mock justifications
-            justifications = [
-                {
-                    'reason': 'Professional tone selected',
-                    'evidence': 'Formality slider optimized for platform standards'
-                },
-                {
-                    'reason': 'Empathy level applied',
-                    'evidence': 'Empathy setting matched to rating context'
-                },
-                {
-                    'reason': 'Response length optimized',
-                    'evidence': 'Length preference balances thoroughness with readability'
-                },
-                {
-                    'reason': 'Actionability level configured',
-                    'evidence': 'Action guidance based on review sentiment analysis'
-                }
-            ]
-            
-            # Mock brand voice score
-            brand_voice_score = 88 + (formality // 10) + (empathy // 15)
-            brand_voice_score = min(brand_voice_score, 96)
-            
-            return jsonify({
-                'response': mock_response,
-                'confidence_score': confidence_score,
-                'justifications': justifications,
-                'brand_voice_score': brand_voice_score,
-                'generation_time': 1.2,
-                'analysis': {
-                    'tone_applied': tone_descriptor,
-                    'empathy_level': empathy_descriptor,
-                    'length_category': length_descriptor,
-                    'actionability': action_descriptor,
-                    'sentiment_detected': sentiment
-                }
-            })
+        })
             
     except Exception as e:
         return jsonify({'error': str(e)}), 500
