@@ -886,7 +886,47 @@ def simulate_review():
 @app.route('/')
 def index():
     """Serve the elite dashboard as the main interface"""
-    return send_from_directory('.', 'elite-dashboard.html')
+    try:
+        return send_from_directory('.', 'elite-dashboard.html')
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Failed to serve dashboard: {str(e)}",
+            "available_endpoints": ["/health", "/api/status", "/dashboard.html"]
+        }), 500
+
+@app.route('/health')
+def health_check():
+    """Health check endpoint for Google Cloud Run"""
+    return jsonify({
+        "status": "healthy",
+        "service": "AI Review Response Platform",
+        "timestamp": datetime.now().isoformat(),
+        "version": "1.0.0"
+    }), 200
+
+@app.route('/api/status')
+def api_status():
+    """API status endpoint"""
+    try:
+        # Test basic functionality
+        reviews = load_reviews()
+        return jsonify({
+            "status": "operational",
+            "service": "AI Review Response Platform",
+            "features": {
+                "encryption": "enabled",
+                "demo_mode": True,
+                "ai_powered": False
+            },
+            "total_reviews": len(reviews),
+            "timestamp": datetime.now().isoformat()
+        }), 200
+    except Exception as e:
+        return jsonify({
+            "status": "error", 
+            "message": str(e)
+        }), 500
 
 @app.route('/dashboard.html')
 def dashboard():
@@ -943,47 +983,6 @@ def sentient_ai_css():
 def sentient_ai_controller_js():
     """Serve the sentient AI controller JS"""
     return send_from_directory('.', 'sentient-ai-controller.js')
-
-@app.route('/health', methods=['GET'])
-def health_check():
-    """Health check endpoint for deployment platforms"""
-    # Test encryption functionality
-    try:
-        test_data = {"test": "encryption_working"}
-        encrypted = encryption.encrypt_data(test_data)
-        decrypted = encryption.decrypt_data(encrypted)
-        encryption_status = "healthy" if decrypted == test_data else "error"
-    except Exception as e:
-        encryption_status = f"error: {str(e)}"
-    
-    return jsonify({
-        "status": "healthy",
-        "service": "ResponseAI - Intelligent Review Management Platform",
-        "version": "2.1.0",
-        "features": [
-            "AI Response Generation", 
-            "Multi-platform Integration", 
-            "Real-time Analytics", 
-            "Elite Dashboard",
-            "AES-256-GCM Encryption",
-            "Secure API Key Storage"
-        ],
-        "security": {
-            "encryption": encryption_status,
-            "algorithm": "AES-256-GCM",
-            "key_derivation": "PBKDF2-SHA256"
-        },
-        "uptime": "99.9%",
-        "endpoints": {
-            "main": "/",
-            "elite_dashboard": "/elite-dashboard.html",
-            "minimal_dashboard": "/minimal-dashboard.html",
-            "webhook": "/webhook/new-review",
-            "api": "/api/reviews/pending",
-            "encrypted_storage": "/api/keys"
-        },
-        "timestamp": datetime.now().isoformat()
-    }), 200
 
 # Encryption management endpoints
 @app.route('/api/encryption/status', methods=['GET'])
@@ -1633,6 +1632,41 @@ def calculate_brand_voice_score(response, brand_voice_prefs):
         score += 8
     
     return min(score, 96)
+
+# Error handlers for better debugging
+@app.errorhandler(404)
+def not_found(error):
+    return jsonify({
+        "error": "Not Found",
+        "message": "The requested resource was not found",
+        "available_endpoints": [
+            "/", "/health", "/api/status", 
+            "/dashboard.html", "/prompt-lab.html"
+        ]
+    }), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    return jsonify({
+        "error": "Internal Server Error",
+        "message": "An internal server error occurred",
+        "contact": "Check logs for more details"
+    }), 500
+
+# Add a catch-all route for debugging
+@app.route('/debug')
+def debug_info():
+    """Debug endpoint to check file structure"""
+    import glob
+    
+    files = glob.glob("*.html")
+    return jsonify({
+        "working_directory": os.getcwd(),
+        "html_files": files,
+        "all_files": os.listdir('.'),
+        "flask_env": os.environ.get("FLASK_ENV"),
+        "port": os.environ.get("PORT")
+    })
 
 if __name__ == '__main__':
     # For local development, run with `python app.py`
